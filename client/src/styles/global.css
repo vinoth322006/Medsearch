@@ -1,0 +1,191 @@
+/* ============================================================
+   MedSearch / PubMed Design System
+   Matches the official PubMed visual language
+   ============================================================ */
+
+:root {
+  /* PubMed navy header & primary */
+  --pm-navy: #20558a;
+  --pm-navy-dark: #1a4570;
+  --pm-navy-light: #2d6da8;
+  --pm-green: #2e8540;
+  --pm-green-hover: #256d34;
+  --pm-orange: #c05702;
+  --pm-orange-light: #d2691e;
+  --pm-link: #20558a;
+  --pm-link-hover: #1a4570;
+
+  /* Backgrounds */
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --surface-2: #f0f0f0;
+  --surface-3: #e8e8e8;
+  --surface-sidebar: #ffffff;
+  --hero-bg: #20558a;
+
+  /* Borders */
+  --border: #d9d9d9;
+  --border-mid: #c6c6c6;
+  --border-strong: #999999;
+  --border-light: #e8e8e8;
+
+  /* Text */
+  --text: #212121;
+  --text-2: #333333;
+  --text-muted: #565656;
+  --text-subtle: #777777;
+  --text-white: #ffffff;
+
+  /* Semantic */
+  --success: #2e8540;
+  --success-bg: #e7f4e9;
+  --success-border: #bfe3c6;
+  --warning: #8a6d00;
+  --warning-bg: #fff8e0;
+  --warning-border: #f0d9a8;
+  --danger: #d32f2f;
+  --danger-bg: #fce4e4;
+  --danger-border: #f1c9c6;
+  --info: #205493;
+  --info-bg: #e1f3f8;
+  --info-border: #b4d7e8;
+
+  /* Focus */
+  --focus: #2b7bb9;
+  --focus-ring: 0 0 0 3px rgba(43, 123, 185, 0.35);
+
+  /* Typography — PubMed's exact font stack */
+  --font-ui: "Source Sans 3", "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: "Courier New", Courier, monospace;
+
+  /* Type scale */
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-14: 0.875rem;
+  --fs-15: 0.9375rem;
+  --fs-16: 1rem;
+  --fs-18: 1.125rem;
+  --fs-20: 1.25rem;
+  --fs-24: 1.5rem;
+  --fs-28: 1.75rem;
+  --fs-34: 2.125rem;
+  --fs-44: 2.75rem;
+
+  /* Spacing — 4/8 scale */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px; --s-24: 96px;
+
+  /* Radii */
+  --r-xs: 2px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-2xl: 16px; --r-pill: 999px;
+
+  /* Shadows — subtle */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-xl: 0 24px 48px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.1);
+
+  /* Layout */
+  --header-h: 60px;
+  --maxw: 1200px;
+  --maxw-wide: 1400px;
+  --sidebar-w: 280px;
+
+  /* Motion */
+  --t-1: 120ms; --t-2: 180ms; --t-3: 260ms; --t-4: 360ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* z-index */
+  --z-sticky: 50; --z-overlay: 700; --z-modal: 900; --z-toast: 1000;
+}
+
+/* ============================================================
+   Base reset & a11y
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; tab-size: 4; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-16);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+img, svg, video, canvas { display: block; max-width: 100%; }
+img { height: auto; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; }
+::selection { background: #b3d4fc; color: #000; }
+
+h1, h2, h3, h4, h5 {
+  margin: 0 0 var(--s-2);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-2);
+}
+h1 { font-size: var(--fs-28); font-weight: 700; }
+h2 { font-size: var(--fs-24); }
+h3 { font-size: var(--fs-20); }
+h4 { font-size: var(--fs-16); }
+p { margin: 0 0 var(--s-2); }
+small { font-size: var(--fs-13); }
+a { color: var(--pm-link); text-decoration: none; }
+a:hover { text-decoration: underline; color: var(--pm-link-hover); }
+ul, ol { margin: 0; padding: 0; }
+code, kbd, samp { font-family: var(--font-mono); font-size: 0.92em; }
+hr { border: none; border-top: 1px solid var(--border); margin: var(--s-6) 0; }
+
+/* Visible focus everywhere */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* Skip link */
+.skip-link {
+  position: fixed; top: -120px; left: var(--s-3); z-index: var(--z-toast);
+  background: var(--text); color: var(--surface);
+  padding: var(--s-2) var(--s-4); border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg); font-weight: 600; font-size: var(--fs-14);
+  transition: top var(--t-2) var(--ease-out);
+}
+.skip-link:focus { top: var(--s-3); }
+
+/* Screen-reader only */
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* App shell */
+.app-shell { display: flex; flex-direction: column; min-height: 100dvh; }
+.page:focus { outline: none; }
+.page { flex: 1 1 auto; }
+
+/* Layout helpers */
+.container { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s-6); }
+.container-wide { max-width: var(--maxw-wide); }
+.muted { color: var(--text-muted); }
+.subtle { color: var(--text-subtle); }
+.row { display: flex; align-items: center; gap: var(--s-2); }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.col { display: flex; flex-direction: column; gap: var(--s-2); }
+.spacer { flex: 1 1 auto; }
+.hint { font-size: var(--fs-14); color: var(--text-muted); line-height: 1.5; }
+.hint--sm { font-size: var(--fs-12); }
+.nowrap { white-space: nowrap; }

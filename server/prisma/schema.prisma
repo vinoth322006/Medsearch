@@ -1,0 +1,111 @@
+// Prisma schema for MedSearch
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String
+  role          Role     @default(user)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+  lastActiveAt  DateTime?
+
+  refreshTokens RefreshToken[]
+  bookmarks     Bookmark[]
+  searches      SearchHistory[]
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+  userAgent    String?
+  ip           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Bookmark {
+  id             String   @id @default(cuid())
+  userId         String
+  query          String
+  resultText     String
+  score          Float
+  pmid           Int?
+  pmcid          String?
+  section        String?
+  folder         String?
+  tags           String[]
+  createdAt      DateTime @default(now())
+  articleTitle   String?
+  articleAuthors String[]
+  articleJournal String?
+  articlePubDate String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model SearchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  query       String
+  resultCount Int
+  source      String   @default("live")
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model SearchEvent {
+  id          String    @id @default(cuid())
+  userId      String?
+  anonymous   Boolean
+  queryLength Int      @default(0)
+  isAuthed    Boolean
+  source      String   @default("live")
+  resultCount Int
+  latencyMs   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model ArticleMeta {
+  pmid      Int      @id
+  pmcid     String?
+  title     String?
+  authors   String[]
+  journal   String?
+  pubDate   String?
+  rawJson   Json?
+  fetchedAt DateTime @default(now())
+
+  @@index([pmcid])
+}

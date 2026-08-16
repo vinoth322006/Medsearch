@@ -1,0 +1,35 @@
+/* ============================================================
+   PubMed-style Footer
+   ============================================================ */
+.pm-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: var(--s-6) var(--s-6);
+  margin-top: auto;
+}
+.pm-footer__inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  text-align: center;
+}
+.pm-footer__links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-14);
+}
+.pm-footer__links a {
+  color: var(--pm-link);
+  font-weight: 600;
+}
+.pm-footer__sep {
+  color: var(--text-subtle);
+}
+.pm-footer__copy {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
