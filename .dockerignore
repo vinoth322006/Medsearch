@@ -1,0 +1,14 @@
+node_modules
+server/node_modules
+client/node_modules
+server/dist
+client/dist
+*.log
+*.err.log
+*.out.log
+.git
+.gitignore
+README.md
+server/.env
+server/.env.prod
+client/.env.local

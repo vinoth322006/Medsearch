@@ -1,11 +1,12 @@
 # =============================================================================
-# MedSearch — Production Docker Compose (Single EC2 Instance)
+# MedSearch — Production Docker Compose (Streamlined: 3 containers)
 # =============================================================================
+# Express serves BOTH the API and React SPA — no separate Nginx container.
+#
 # Usage:
-#   1. Copy server/.env.example → server/.env.prod and fill in production values
+#   1. Create server/.env.prod with production values
 #   2. docker compose -f docker-compose.prod.yml up -d --build
-#   3. docker compose -f docker-compose.prod.yml exec server npx prisma migrate deploy
-#   4. docker compose -f docker-compose.prod.yml exec server npm run seed
+#   3. docker compose -f docker-compose.prod.yml exec server npm run seed  (first time)
 # =============================================================================
 
 services:
@@ -16,7 +17,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-medisearch}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-medisearch}
     volumes:
       - medsearch_pgdata:/var/lib/postgresql/data
@@ -44,10 +45,10 @@ services:
     networks:
       - medsearch
 
-  # ── Express API Server ─────────────────────────────────────────────
+  # ── MedSearch App (Express: API + React SPA) ───────────────────────
   server:
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
     container_name: medsearch-server
     restart: unless-stopped
@@ -59,27 +60,13 @@ services:
     env_file:
       - ./server/.env.prod
     environment:
-      # Override DB/Redis URLs to point to container hostnames
       DATABASE_URL: postgresql://${POSTGRES_USER:-medisearch}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medisearch}?schema=public
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
       PORT: "4000"
-      # When Nginx proxies, the origin is the same domain
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-    networks:
-      - medsearch
-
-  # ── Nginx (React SPA + reverse proxy) ──────────────────────────────
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    container_name: medsearch-client
-    restart: unless-stopped
-    depends_on:
-      - server
     ports:
-      - "80:80"
+      - "${HOST_PORT:-80}:4000"
     networks:
       - medsearch
 
