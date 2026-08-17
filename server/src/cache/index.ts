@@ -6,9 +6,19 @@ export const redis = new Redis(config.redisUrl, {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   lazyConnect: false,
+  retryStrategy(times) {
+    if (times > 10) return null;
+    return Math.min(times * 1000, 5000);
+  }
 });
 
-redis.on('error', (err) => logger.error({ err }, 'redis error'));
+redis.on('error', (err: any) => {
+  if (err?.code === 'ECONNREFUSED' || err?.message?.includes('ECONNREFUSED')) {
+    logger.warn('redis connection refused, retrying...');
+  } else {
+    logger.error({ err }, 'redis error');
+  }
+});
 redis.on('connect', () => logger.info('redis connected'));
 
 export interface CacheResult<T> {

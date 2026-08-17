@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 import { useAuth } from './context/AuthContext';
 import { AppHeader, FocusOnRoute } from './components/layout/AppHeader';
 import { AppFooter } from './components/layout/AppFooter';
@@ -23,16 +24,23 @@ function Protected({ children, role }: { children: ReactNode; role?: 'admin' }) 
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomepage = location.pathname === '/';
-  const hasSearchQuery = new URLSearchParams(location.search).has('q');
+  const searchParams = new URLSearchParams(location.search);
+  const hasSearchQuery = searchParams.has('q');
+  const currentQuery = searchParams.get('q') ?? '';
 
   // Show compact header on all pages except homepage without a query
   const showCompact = !isHomepage || hasSearchQuery;
 
+  const handleHeaderSearch = useCallback((q: string) => {
+    navigate(`/?q=${encodeURIComponent(q)}`);
+  }, [navigate]);
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">Skip to main content</a>
-      <AppHeader compact={showCompact} />
+      <AppHeader compact={showCompact} searchQuery={currentQuery} onSearch={handleHeaderSearch} />
       <FocusOnRoute>
         <Routes>
           <Route path="/" element={<SearchPage />} />

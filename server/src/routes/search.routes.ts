@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { optionalAuth, authRequired } from '../middleware/auth';
 import { anonSearchLimiter, authedSearchLimiter } from '../middleware/rateLimit';
 import { runSearch } from '../services/search.service';
+import { prisma } from '../db/prisma';
+import { redis } from '../cache';
 
 const router = Router();
 
@@ -30,8 +32,16 @@ router.post('/search', optionalAuth, anonSearchLimiter, authedSearchLimiter, asy
   } catch (e) { next(e); }
 });
 
-router.get('/health', (_req, res) => {
-  res.json({ ok: true, ts: Date.now() });
+router.get('/health', async (_req, res, next) => {
+  try {
+    // Deep healthcheck: confirm Postgres + Redis are reachable.
+    const [pg, cache] = await Promise.all([
+      prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
+      redis.ping().then((r) => r === 'PONG').catch(() => false),
+    ]);
+    const ok = pg && cache;
+    res.status(ok ? 200 : 503).json({ ok, ts: Date.now(), checks: { postgres: pg, redis: cache } });
+  } catch (e) { next(e); }
 });
 
 export { authRequired };

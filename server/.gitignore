@@ -3,3 +3,5 @@ dist/
 .env
 prisma/migrations/dev.db*
 *.log
+tests/
+server-prod.*.log

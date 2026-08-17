@@ -23,11 +23,24 @@ app.use(errorHandler);
 
 const server = app.listen(config.port, () => logger.info(`MedSearch backend listening on :${config.port} (${config.nodeEnv})`));
 
+// Fail fast on unhandled rejections / uncaught exceptions so process managers
+// restart us cleanly instead of running in an inconsistent state.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ reason }, 'unhandledRejection');
+  process.exit(1);
+});
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'uncaughtException');
+  process.exit(1);
+});
+
 ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach((sig) =>
   process.on(sig, () => {
     logger.info({ sig }, 'shutting down');
+    server.closeAllConnections();
     server.close(() => {
       redis.quit().finally(() => process.exit(0));
     });
+    setTimeout(() => process.exit(1), 5000).unref();
   })
 );

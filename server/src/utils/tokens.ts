@@ -24,7 +24,10 @@ export const signRefreshToken = signRefresh;
 export const verifyRefreshToken = verifyRefresh;
 
 export function signRefresh(payload: AccessPayload): string {
-  return jwt.sign(payload, config.jwt.refreshSecret, { expiresIn: config.jwt.refreshTtlDays * 86400 });
+  // jti (random per-token id) guarantees distinct signatures even when two
+  // refresh tokens are issued in the same second (avoids tokenHash collisions
+  // on the unique RefreshToken.tokenHash column during rapid rotations).
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, config.jwt.refreshSecret, { expiresIn: config.jwt.refreshTtlDays * 86400 });
 }
 
 export function verifyRefresh(token: string): AccessPayload | null {

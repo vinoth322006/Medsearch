@@ -15,6 +15,8 @@ export interface ArticleMeta {
   authors: string[];
   journal: string | null;
   pubDate: string | null;
+  pubType: string[];
+  lang: string;
 }
 
 const interval = config.eutils.apiKey
@@ -40,6 +42,8 @@ export async function fetchArticleMeta(pmids: number[]): Promise<Record<number, 
         authors: row.authors,
         journal: row.journal,
         pubDate: row.pubDate,
+        pubType: row.pubType,
+        lang: row.lang,
       };
     } else {
       stillNeeded.push(pmid);
@@ -90,6 +94,10 @@ async function fetchBatch(batch: number[]): Promise<Record<string, ArticleMeta>>
       const authors = Array.isArray(a.authors)
         ? (a.authors as Array<Record<string, unknown>>).map((x) => String(x.name ?? '')).filter(Boolean)
         : [];
+      const pubType = Array.isArray(a.pubtype)
+        ? (a.pubtype as unknown[]).map((x) => String(x ?? '')).filter(Boolean)
+        : [];
+      const lang = typeof a.lang === 'string' ? a.lang : 'eng';
       const pmid = parseInt(uid, 10);
       out[uid] = {
         pmid,
@@ -98,6 +106,8 @@ async function fetchBatch(batch: number[]): Promise<Record<string, ArticleMeta>>
         authors,
         journal: typeof a.fulljournalname === 'string' ? a.fulljournalname : typeof a.source === 'string' ? a.source : null,
         pubDate: typeof a.pubdate === 'string' ? a.pubdate : null,
+        pubType,
+        lang,
       };
     }
 
@@ -139,6 +149,8 @@ async function persistBatch(meta: Record<string, ArticleMeta>): Promise<void> {
           authors: m.authors,
           journal: m.journal,
           pubDate: m.pubDate,
+          pubType: m.pubType,
+          lang: m.lang,
           rawJson: m as unknown as object,
         },
         update: {},

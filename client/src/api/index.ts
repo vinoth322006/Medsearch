@@ -80,7 +80,7 @@ export const api = {
 };
 
 export interface User { id: string; email: string; name?: string | null; role: 'user' | 'admin'; createdAt?: string }
-export interface ArticleMeta { pmid: number; pmcid: string | null; title: string | null; authors: string[]; journal: string | null; pubDate: string | null }
+export interface ArticleMeta { pmid: number; pmcid: string | null; title: string | null; authors: string[]; journal: string | null; pubDate: string | null; pubType: string[]; lang: string }
 export interface SearchResultItem { text: string; score: number; pmid: number | null; pmcid: string | null; section: string; meta?: ArticleMeta | null }
 export interface SearchResponse { results: SearchResultItem[]; source: 'live' | 'cache' | 'degraded'; degradedMessage?: string; cacheHit: boolean; latencyMs: number; resultCount: number }
 export interface Bookmark { id: string; userId: string; query: string; resultText: string; score: number; pmid: number | null; pmcid: string | null; section?: string | null; folder?: string | null; tags: string[]; createdAt: string; articleTitle?: string | null; articleAuthors?: string[]; articleJournal?: string | null; articlePubDate?: string | null }

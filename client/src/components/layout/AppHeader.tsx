@@ -24,12 +24,12 @@ function PubMedLogo({ className, white }: { className?: string; white?: boolean 
   );
 }
 
-/** NIH Logo — simplified inline SVG */
-function NIHLogo() {
+/** MedSearch Logo */
+function MedSearchLogo() {
   return (
     <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
       <rect x="1" y="1" width="40" height="40" rx="3" stroke="#fff" strokeWidth="2" fill="none"/>
-      <text x="5" y="29" fontFamily="Source Sans 3, Arial, sans-serif" fontSize="18" fontWeight="700" fill="#fff">NIH</text>
+      <text x="7" y="28" fontFamily="Source Sans 3, Arial, sans-serif" fontSize="18" fontWeight="700" fill="#fff">MS</text>
     </svg>
   );
 }
@@ -79,13 +79,13 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       {/* Row 1: Navy top bar */}
       <div className="pm-header__top">
         <div className="pm-header__top-inner container-wide">
-          <a href="https://www.ncbi.nlm.nih.gov/" className="pm-header__nlm-link" target="_blank" rel="noopener noreferrer">
-            <NIHLogo />
+          <NavLink to="/" className="pm-header__nlm-link" end>
+            <MedSearchLogo />
             <div className="pm-header__nlm-text">
-              <span className="pm-header__nlm-name">National Library of Medicine</span>
-              <span className="pm-header__nlm-sub">National Center for Biotechnology Information</span>
+              <span className="pm-header__nlm-name">MedSearch Platform</span>
+              <span className="pm-header__nlm-sub">Advanced Semantic Search Engine</span>
             </div>
-          </a>
+          </NavLink>
 
           <div className="pm-header__actions">
             {/* Desktop nav items */}
@@ -136,9 +136,9 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       {compact && (
         <div className="pm-header__search-row">
           <div className="pm-header__search-inner container-wide">
-            <a href="/" className="pm-header__logo-link" aria-label="MedSearch home">
+            <NavLink to="/" className="pm-header__logo-link" aria-label="MedSearch home" end>
               <PubMedLogo />
-            </a>
+            </NavLink>
             <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch}>
               <input
                 type="text"
@@ -155,9 +155,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
               )}
               <button type="submit" className="pm-header__search-btn">Search</button>
             </form>
-            <div className="pm-header__search-links">
-              <a href="https://pubmed.ncbi.nlm.nih.gov/advanced/" target="_blank" rel="noopener noreferrer">Advanced</a>
-            </div>
+
           </div>
         </div>
       )}

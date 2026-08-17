@@ -7,6 +7,19 @@ function required(key: string, fallback?: string): string {
   return v;
 }
 
+// In production, security-critical secrets must be explicitly set and strong.
+function secret(key: string, devFallback: string): string {
+  const v = process.env[key];
+  const isProd = process.env.NODE_ENV === 'production';
+  if (v && v.length >= 32) return v;
+  if (isProd) {
+    throw new Error(
+      `${key} must be set to a random string of at least 32 bytes in production (e.g. openssl rand -hex 32).`,
+    );
+  }
+  return v ?? devFallback;
+}
+
 function int(key: string, fallback: number): number {
   const v = process.env[key];
   if (!v) return fallback;
@@ -21,8 +34,8 @@ export const config = {
   databaseUrl: required('DATABASE_URL', 'postgresql://medisearch:medisearch_dev@localhost:5432/medisearch?schema=public'),
   redisUrl: required('REDIS_URL', 'redis://localhost:6379'),
   jwt: {
-    accessSecret: required('JWT_ACCESS_SECRET', 'dev-access-secret-change-me'),
-    refreshSecret: required('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-me'),
+    accessSecret: secret('JWT_ACCESS_SECRET', 'dev-access-secret-change-me'),
+    refreshSecret: secret('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-me'),
     accessTtl: process.env.ACCESS_TOKEN_TTL ?? '15m',
     refreshTtlDays: int('REFRESH_TOKEN_TTL_DAYS', 30),
   },

@@ -16,7 +16,7 @@ const profileSchema = z.object({ name: z.string().nullable().optional() });
 router.post('/signup', async (req, res, next) => {
   try {
     const parsed = signupSchema.parse(req.body);
-    const out = await signup(parsed.email, parsed.password, parsed.name);
+    const out = await signup(parsed.email, parsed.password, parsed.name, req);
     setRefreshCookie(res, out.refresh);
     res.status(201).json({ accessToken: out.access, user: out.user });
   } catch (e) { next(e); }
@@ -32,7 +32,7 @@ router.post('/login', async (req, res, next) => {
       res.status(429).json({ error: `Too many failed attempts. Try again in ${Math.ceil((lock.msBeforeNext ?? 0) / 1000)}s.` });
       return;
     }
-    const out = await login(parsed.email, parsed.password);
+    const out = await login(parsed.email, parsed.password, req);
     setRefreshCookie(res, out.refresh);
     res.json({ accessToken: out.access, user: out.user });
   } catch (e) {
@@ -52,7 +52,7 @@ router.post('/refresh', async (req, res, next) => {
   try {
     const token = req.cookies?.[REFRESH_COOKIE];
     if (!token) { res.status(401).json({ error: 'No refresh token' }); return; }
-    const out = await rotateRefresh(token);
+    const out = await rotateRefresh(token, req);
     setRefreshCookie(res, out.refresh);
     res.json({ accessToken: out.access, user: { id: out.sub, email: out.email, role: out.role } });
   } catch (e) { next(e); }

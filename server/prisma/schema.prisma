@@ -98,14 +98,16 @@ model SearchEvent {
 }
 
 model ArticleMeta {
-  pmid      Int      @id
-  pmcid     String?
-  title     String?
-  authors   String[]
-  journal   String?
-  pubDate   String?
-  rawJson   Json?
-  fetchedAt DateTime @default(now())
+  pmid        Int      @id
+  pmcid       String?
+  title       String?
+  authors     String[]
+  journal     String?
+  pubDate     String?
+  pubType     String[] @default([])
+  lang        String   @default("eng")
+  rawJson     Json?
+  fetchedAt   DateTime @default(now())
 
   @@index([pmcid])
 }

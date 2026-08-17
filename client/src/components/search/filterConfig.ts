@@ -58,14 +58,6 @@ export const FILTER_CONFIG: FilterGroup[] = [
     ],
   },
   {
-    key: 'articleAttribute',
-    label: 'Article attribute',
-    type: 'checkbox',
-    options: [
-      { value: 'associatedData', label: 'Associated data' },
-    ],
-  },
-  {
     key: 'articleType',
     label: 'Article type',
     type: 'checkbox',

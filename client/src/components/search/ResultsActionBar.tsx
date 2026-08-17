@@ -1,4 +1,6 @@
-import { SORT_OPTIONS, type PerPage } from './filterConfig';
+import { useState, useRef, useEffect } from 'react';
+import { SORT_OPTIONS, DISPLAY_FORMATS, type PerPage } from './filterConfig';
+import type { SearchResultItem } from '../../api';
 
 interface ResultsActionBarProps {
   resultCount: number;
@@ -11,22 +13,64 @@ interface ResultsActionBarProps {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  /** Currently checkbox-selected results (may be empty) */
+  selectedItems: SearchResultItem[];
+  /** All results visible on the current page (used when nothing is selected) */
+  currentPageItems: SearchResultItem[];
+  /** Bulk-save items to bookmarks */
+  onSave: (items: SearchResultItem[]) => void;
+  /** Open mailto: with formatted items body */
+  onEmail: (items: SearchResultItem[]) => void;
+  /** Send items somewhere (clipboard / file) */
+  onSendTo: (action: 'copy' | 'download', items: SearchResultItem[]) => void;
+  /** True while a bulk save is in flight (disables the Save button) */
+  saving?: boolean;
 }
 
 export function ResultsActionBar({
   resultCount,
   sortBy,
   onSortChange,
+  displayFormat,
+  onDisplayFormatChange,
   page,
   totalPages,
   onPageChange,
+  selectedItems,
+  currentPageItems,
+  onSave,
+  onEmail,
+  onSendTo,
+  saving = false,
 }: ResultsActionBarProps) {
+  const hasSelection = selectedItems.length > 0;
+  const target = hasSelection ? selectedItems : currentPageItems;
+  const count = hasSelection ? selectedItems.length : currentPageItems.length;
+  const countLabel = hasSelection ? ` (${count})` : '';
+
   return (
     <div className="pm-action-bar">
       <div className="pm-action-bar__left">
-        <button className="pm-action-bar__btn" title="Save results">Save</button>
-        <button className="pm-action-bar__btn" title="Email results">Email</button>
-        <button className="pm-action-bar__btn" title="Send to clipboard or collection">Send to</button>
+        <button
+          className="pm-action-bar__btn"
+          onClick={() => onSave(target)}
+          disabled={saving}
+          title={hasSelection ? `Save ${count} selected result${count === 1 ? '' : 's'} to bookmarks` : `Save all ${count} results on this page to bookmarks`}
+        >
+          {saving ? 'Saving…' : `Save${countLabel}`}
+        </button>
+        <button
+          className="pm-action-bar__btn"
+          onClick={() => onEmail(target)}
+          title={hasSelection ? `Email ${count} selected result${count === 1 ? '' : 's'}` : `Email all ${count} results on this page`}
+        >
+          Email{countLabel}
+        </button>
+        <SendToMenu
+          onSendTo={(action) => onSendTo(action, target)}
+          hasSelection={hasSelection}
+          count={count}
+        />
       </div>
       <div className="pm-action-bar__right">
         <label className="pm-action-bar__sort">
@@ -37,7 +81,19 @@ export function ResultsActionBar({
             ))}
           </select>
         </label>
-        <DisplayOptionsButton />
+        <label className="pm-action-bar__display">
+          <span className="pm-action-bar__display-label">Display:</span>
+          <select
+            value={displayFormat}
+            onChange={(e) => onDisplayFormatChange(e.target.value)}
+            aria-label="Result display format"
+            title="Change how results are displayed"
+          >
+            {DISPLAY_FORMATS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="pm-action-bar__results-meta">
         <span className="pm-action-bar__count">{resultCount.toLocaleString()} results</span>
@@ -47,12 +103,67 @@ export function ResultsActionBar({
   );
 }
 
-/** Display Options button (placeholder — can expand to a panel) */
-function DisplayOptionsButton() {
+/** Send-to dropdown with clipboard + download actions. */
+function SendToMenu({
+  onSendTo,
+  hasSelection,
+  count,
+}: {
+  onSendTo: (action: 'copy' | 'download') => void;
+  hasSelection: boolean;
+  count: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const idRef = useRef(`sendto-${Math.random().toString(36).slice(2, 9)}`);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  const label = `Send to${hasSelection ? ` (${count})` : ''}`;
+
   return (
-    <button className="pm-action-bar__btn pm-action-bar__display-btn" title="Display options">
-      Display options ⚙
-    </button>
+    <div className="pm-action-bar__sendto" ref={ref}>
+      <button
+        className="pm-action-bar__btn"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={idRef.current}
+        title={hasSelection ? `Send ${count} selected result${count === 1 ? '' : 's'}` : `Send all ${count} results on this page`}
+      >
+        {label} <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="pm-action-bar__menu" role="menu" id={idRef.current}>
+          <button
+            role="menuitem"
+            className="pm-action-bar__menu-item"
+            onClick={() => { setOpen(false); onSendTo('copy'); }}
+          >
+            Copy to clipboard
+          </button>
+          <button
+            role="menuitem"
+            className="pm-action-bar__menu-item"
+            onClick={() => { setOpen(false); onSendTo('download'); }}
+          >
+            Download as text file
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -118,4 +229,4 @@ function Pagination({ page, totalPages, onPageChange }: { page: number; totalPag
   );
 }
 
-export { Pagination, DisplayOptionsButton };
+export { Pagination };

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Search as SearchIcon, X } from 'lucide-react';
+import { Search as SearchIcon, X, FilterX } from 'lucide-react';
 import { api, SearchResultItem, SearchResponse } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Alert } from '../components/ui/Alert';
 import { SearchResultCard } from '../components/search/SearchResultCard';
 import { FilterSidebar } from '../components/search/FilterSidebar';
@@ -9,7 +10,8 @@ import { ResultsActionBar } from '../components/search/ResultsActionBar';
 import { Pagination } from '../components/search/ResultsActionBar';
 import { useFilters } from '../hooks/useFilters';
 import { PER_PAGE_OPTIONS, type PerPage } from '../components/search/filterConfig';
-import { Link, useLocation } from 'react-router-dom';
+import { applyFilters, labelFor, FILTER_GROUP_LABELS, calculateFilterCounts } from '../components/search/applyFilters';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PubMedLogo } from '../components/layout/AppHeader';
 
 const SAMPLE_QUERIES = [
@@ -37,8 +39,7 @@ function SkeletonCard() {
   );
 }
 
-/**
- * Sort results based on selected sort option
+/** Sort results based on selected sort option
  */
 function sortResults(results: SearchResultItem[], sortBy: string): SearchResultItem[] {
   const copy = [...results];
@@ -85,14 +86,57 @@ function sortResults(results: SearchResultItem[], sortBy: string): SearchResultI
   }
 }
 
+/** Format a list of results as a plain-text bundle for email / clipboard / download. */
+function formatItemsAsText(items: SearchResultItem[], query: string): string {
+  const header = [
+    'MedSearch — Results Export',
+    '='.repeat(40),
+    '',
+    `Search query: ${query}`,
+    `Results: ${items.length}`,
+    `Exported: ${new Date().toLocaleString()}`,
+    '',
+    '='.repeat(40),
+    '',
+  ].join('\n');
+
+  const blocks = items.map((r, i) => {
+    const meta = r.meta;
+    const lines: string[] = [];
+    lines.push(`[${i + 1}] ${meta?.title ?? r.text.slice(0, 120)}`);
+    if (meta?.authors?.length) lines.push(`    Authors: ${meta.authors.join(', ')}`);
+    if (meta?.journal) lines.push(`    Journal: ${meta.journal}`);
+    if (meta?.pubDate) lines.push(`    Date: ${meta.pubDate}`);
+    if (r.pmid) lines.push(`    PMID: ${r.pmid}`);
+    if (r.pmcid) lines.push(`    PMCID: ${r.pmcid}`);
+    if (meta?.pubType?.length) lines.push(`    Type: ${meta.pubType.join(', ')}`);
+    lines.push(`    Confidence: ${Math.round(r.score * 100)}%`);
+    if (r.pmid) lines.push(`    URL: https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`);
+    if (r.pmcid) lines.push(`    PMC: https://www.ncbi.nlm.nih.gov/pmc/articles/${r.pmcid}/`);
+    lines.push('');
+    lines.push('    Excerpt:');
+    r.text.split('\n').forEach((l) => lines.push('    ' + l));
+    lines.push('');
+    lines.push('-'.repeat(40));
+    return lines.join('\n');
+  });
+
+  return header + blocks.join('\n');
+}
+
 export function SearchPage() {
   const { user } = useAuth();
+  const { notify } = useToast();
   const location = useLocation();
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const navigate = useNavigate();
+
+  // Initialize from URL params so navigating back preserves state
+  const initialQ = new URLSearchParams(location.search).get('q') ?? '';
+  const [query, setQuery] = useState(initialQ);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(initialQ ? 'loading' : 'idle');
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(Boolean(initialQ));
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Pagination
@@ -107,6 +151,10 @@ export function SearchPage() {
 
   // Filters
   const filtersHook = useFilters();
+  const { filters, clearAll, activeCount, customRange, yearRange } = filtersHook;
+
+  // Reset to page 1 whenever filters change.
+  useEffect(() => { setPage(1); }, [filters, customRange, yearRange]);
 
   // Selection (for bulk actions)
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -128,20 +176,40 @@ export function SearchPage() {
     }
   }, []);
 
-  // Handle URL params for re-running searches
+  // Handle URL params for re-running searches, and reset when navigating home
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get('q') ?? (location.state as { rerun?: string } | null)?.rerun;
-    if (q) { setQuery(q); run(q); }
-  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (q) {
+      setQuery(q);
+      run(q);
+    } else {
+      // Navigated to / without ?q= → reset to homepage
+      setHasSearched(false);
+      setStatus('idle');
+      setData(null);
+      setError(null);
+      setQuery('');
+    }
+  }, [location.search, location.state, location.key, run]);
 
-  const onSubmit = (e: React.FormEvent) => { e.preventDefault(); run(query); };
+  const onSubmit = (e: React.FormEvent) => { e.preventDefault(); if (query.trim().length >= 3) navigate(`/?q=${encodeURIComponent(query.trim())}`); };
 
-  // Process results: sort, paginate
+  // Calculate matching counts for all filter choices
+  const filterCounts = useMemo(() => {
+    if (!data?.results) return {};
+    return calculateFilterCounts(data.results);
+  }, [data?.results]);
+
+  // Process results: sort, then apply filters
   const processedResults = useMemo(() => {
     if (!data?.results) return [];
-    return sortResults(data.results, sortBy);
-  }, [data?.results, sortBy]);
+    const sorted = sortResults(data.results, sortBy);
+    return applyFilters(sorted, filters, customRange, yearRange);
+  }, [data?.results, sortBy, filters, customRange, yearRange]);
+
+  // Total counts
+  const totalRaw = data?.results?.length ?? 0;
 
   const totalPages = Math.max(1, Math.ceil(processedResults.length / perPage));
   const pagedResults = useMemo(() => {
@@ -167,8 +235,104 @@ export function SearchPage() {
       .sort((a, b) => a.year - b.year);
   }, [data?.results]);
 
-  const justSaved = useMemo(() => new Set<string>(), [data]);
+  const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
+  useEffect(() => { setJustSaved(new Set()); }, [data]);
   const isBookmarked = useCallback((_pmid: number | null, text: string) => justSaved.has(_pmid + '|' + text), [justSaved]);
+
+  // ============================================================
+  // Bulk actions (Save / Email / Send to) — operate on the
+  // checkbox-selected results, or fall back to the entire page.
+  // ============================================================
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const selectedItems = useMemo(() => {
+    if (selected.size === 0) return [];
+    return pagedResults.filter((_, i) => selected.has((page - 1) * perPage + i + 1));
+  }, [pagedResults, selected, page, perPage]);
+
+  const handleBulkSave = useCallback(async (items: SearchResultItem[]) => {
+    if (items.length === 0) { notify('No results to save.', 'info'); return; }
+    if (!user) { notify('Sign up or sign in to bookmark results.', 'info'); return; }
+    setBulkSaving(true);
+    const savedKeys: string[] = [];
+    let ok = 0;
+    let dup = 0;
+    let fail = 0;
+    await Promise.all(items.map(async (r) => {
+      const key = (r.pmid ?? 'null') + '|' + r.text;
+      if (justSaved.has(key)) { dup++; return; }
+      try {
+        await api.bookmarks.create({
+          query, resultText: r.text, score: r.score,
+          pmid: r.pmid, pmcid: r.pmcid, section: r.section,
+          articleTitle: r.meta?.title ?? null, articleAuthors: r.meta?.authors ?? [],
+          articleJournal: r.meta?.journal ?? null, articlePubDate: r.meta?.pubDate ?? null,
+        });
+        savedKeys.push(key);
+        ok++;
+      } catch {
+        fail++;
+      }
+    }));
+    if (savedKeys.length > 0) {
+      setJustSaved((prev) => new Set([...prev, ...savedKeys]));
+    }
+    setBulkSaving(false);
+    if (ok > 0 && fail === 0) notify(`Saved ${ok} of ${items.length} result${ok === 1 ? '' : 's'} to bookmarks.`, 'success');
+    else if (ok > 0 && fail > 0) notify(`Saved ${ok} of ${items.length} result${ok === 1 ? '' : 's'}; ${fail} failed.`, 'error');
+    else if (dup === items.length) notify('All selected results are already saved.', 'info');
+    else notify('Could not save bookmarks.', 'error');
+  }, [user, justSaved, query, notify]);
+
+  const handleBulkEmail = useCallback((items: SearchResultItem[]) => {
+    if (items.length === 0) { notify('No results to email.', 'info'); return; }
+    const subject = encodeURIComponent(`MedSearch — ${items.length} result${items.length === 1 ? '' : 's'}`);
+    const body = encodeURIComponent(formatItemsAsText(items, query));
+    const url = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = url;
+    notify(`Opened your email client with ${items.length} result${items.length === 1 ? '' : 's'}.`, 'success');
+  }, [query, notify]);
+
+  const handleSendTo = useCallback((action: 'copy' | 'download', items: SearchResultItem[]) => {
+    if (items.length === 0) { notify('No results to send.', 'info'); return; }
+    const text = formatItemsAsText(items, query);
+    if (action === 'copy') {
+      try {
+        navigator.clipboard.writeText(text).then(
+          () => notify(`Copied ${items.length} result${items.length === 1 ? '' : 's'} to clipboard.`, 'success'),
+          () => {
+            // execCommand fallback for browsers/contexts without Clipboard API
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            notify(`Copied ${items.length} result${items.length === 1 ? '' : 's'} to clipboard.`, 'success');
+          },
+        );
+      } catch {
+        notify('Could not copy to clipboard.', 'error');
+      }
+    } else if (action === 'download') {
+      try {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `medsearch-results-${items.length}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        notify(`Downloaded ${items.length} result${items.length === 1 ? '' : 's'} as text.`, 'success');
+      } catch {
+        notify('Could not generate download.', 'error');
+      }
+    }
+  }, [query, notify]);
 
   // ============================================================
   // Render: Homepage (no search yet)
@@ -202,9 +366,7 @@ export function SearchPage() {
                 <button type="submit" className="pm-hero__search-btn">Search</button>
               </div>
             </form>
-            <div className="pm-hero__links">
-              <a href="https://pubmed.ncbi.nlm.nih.gov/advanced/" target="_blank" rel="noopener noreferrer">Advanced</a>
-            </div>
+
             <p className="pm-hero__desc">
               PubMed® comprises more than 40 million citations for biomedical literature from MEDLINE, life science journals, and online books. Citations may include links to full text content from PubMed Central and publisher web sites.
             </p>
@@ -216,7 +378,7 @@ export function SearchPage() {
           <h2>Try a search</h2>
           <div className="pm-home__chips">
             {SAMPLE_QUERIES.map((q) => (
-              <button key={q} className="pm-home__chip" onClick={() => { setQuery(q); run(q); }}>
+              <button key={q} className="pm-home__chip" onClick={() => navigate(`/?q=${encodeURIComponent(q)}`)}>
                 <SearchIcon size={14} /> {q}
               </button>
             ))}
@@ -251,13 +413,57 @@ export function SearchPage() {
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
+          selectedItems={selectedItems}
+          currentPageItems={pagedResults}
+          onSave={handleBulkSave}
+          onEmail={handleBulkEmail}
+          onSendTo={handleSendTo}
+          saving={bulkSaving}
         />
+      )}
+
+      {/* Active filter chips + clear all */}
+      {status === 'success' && data && activeCount > 0 && (
+        <div className="pm-active-filters" aria-label="Active filters">
+          <span className="pm-active-filters__label">
+            <FilterX size={14} /> {activeCount} active filter{activeCount === 1 ? '' : 's'}:
+          </span>
+          {Object.entries(filters).flatMap(([groupKey, values]) =>
+            [...values].map((val) => (
+              <button
+                key={`${groupKey}:${val}`}
+                className="pm-active-filters__chip"
+                onClick={() => {
+                  if (groupKey === 'publicationDate') {
+                    if (val === 'custom') {
+                      filtersHook.setCustomRange(null);
+                    } else {
+                      filtersHook.setRadioFilter(groupKey, null);
+                    }
+                  } else if (groupKey === 'yearRange') {
+                    filtersHook.setYearRange(null);
+                  } else {
+                    filtersHook.toggleFilter(groupKey, val);
+                  }
+                }}
+                aria-label={`Remove ${FILTER_GROUP_LABELS[groupKey] ?? groupKey}: ${labelFor(groupKey, val, customRange)}`}
+              >
+                {FILTER_GROUP_LABELS[groupKey] ?? groupKey}: <strong>{labelFor(groupKey, val, customRange)}</strong>
+                <X size={12} />
+              </button>
+            )),
+          )}
+          <button className="pm-active-filters__clear" onClick={clearAll}>Clear all</button>
+          <span className="pm-active-filters__count">
+            Showing {processedResults.length} of {totalRaw} results
+          </span>
+        </div>
       )}
 
       <div className="pm-results-layout">
         {/* Left sidebar: Filters */}
         {status === 'success' && data && (
-          <FilterSidebar filtersHook={filtersHook} yearData={yearData} />
+          <FilterSidebar filtersHook={filtersHook} yearData={yearData} filterCounts={filterCounts} />
         )}
 
         {/* Main results column */}
@@ -283,7 +489,11 @@ export function SearchPage() {
             <>
               {data.degradedMessage && <Alert variant="warning">{data.degradedMessage}</Alert>}
               {pagedResults.length === 0 && (
-                <Alert variant="info">No results matched your query. Try rephrasing or using more specific biomedical terms.</Alert>
+                <Alert variant="info">
+                  {activeCount > 0
+                    ? `No results match your current filters (showing 0 of ${totalRaw}). Try removing some filters or clearing all.`
+                    : 'No results matched your query. Try rephrasing or using more specific biomedical terms.'}
+                </Alert>
               )}
 
               <ol className="pm-results-list" start={(page - 1) * perPage + 1}>
@@ -297,6 +507,7 @@ export function SearchPage() {
                         index={i}
                         globalIndex={globalIdx}
                         isBookmarked={isBookmarked}
+                        displayFormat={displayFormat}
                         selected={selected.has(globalIdx)}
                         onSelect={(checked) => {
                           setSelected((prev) => {

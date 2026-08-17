@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { prisma } from '../db/prisma';
 import { authRequired, adminRequired } from '../middleware/auth';
 import { config } from '../config';
@@ -6,6 +7,8 @@ import { logger } from '../utils/logger';
 
 const router = Router();
 router.use(authRequired, adminRequired);
+
+const setActiveSchema = z.object({ active: z.boolean() });
 
 // ---- User management ----
 // NOTE privacy default: admins see only basic account info (email, signup date,
@@ -25,7 +28,8 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
 
 router.patch('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = req.body as { active?: boolean };
+    const parsed = setActiveSchema.parse(req.body);
+    const body = { active: parsed.active };
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) { res.status(404).json({ error: 'User not found' }); return; }
     if (target.id === req.user!.sub && body.active === false) {

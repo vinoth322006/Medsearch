@@ -21,7 +21,7 @@ export function clearRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_COOKIE, { path: '/api/auth', httpOnly: true, sameSite: 'strict', secure: config.isProd });
 }
 
-export async function signup(email: string, password: string, name?: string): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
+export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) throw httpError(409, 'Email already registered');
   if (password.length < 8) throw httpError(400, 'Password must be at least 8 characters');
@@ -29,19 +29,19 @@ export async function signup(email: string, password: string, name?: string): Pr
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({ data: { email: email.toLowerCase(), passwordHash, name } });
-  const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin');
+  const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
   const out = { access, refresh, user: { id: user.id, email: user.email, role: user.role } };
   logger.info({ userId: user.id }, 'user signup');
   return out;
 }
 
-export async function login(email: string, password: string): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
+export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) throw httpError(401, 'Invalid credentials');
   if (!user.active) throw httpError(403, 'Account deactivated');
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw httpError(401, 'Invalid credentials');
-  const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin');
+  const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
   return { access, refresh, user: { id: user.id, email: user.email, role: user.role } };
 }
 
@@ -53,7 +53,7 @@ export async function logout(refreshToken: string | undefined): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revokedAt: new Date() } }).catch(() => undefined);
 }
 
-export async function rotateRefresh(oldToken: string): Promise<{ access: string; refresh: string; sub: string; email: string; role: 'user' | 'admin' }> {
+export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ access: string; refresh: string; sub: string; email: string; role: 'user' | 'admin' }> {
   const payload = verifyRefreshToken(oldToken);
   if (!payload) throw httpError(401, 'Invalid refresh token');
   const tokenHash = hashToken(oldToken);
@@ -62,9 +62,16 @@ export async function rotateRefresh(oldToken: string): Promise<{ access: string;
   const user = await prisma.user.findUnique({ where: { id: stored.userId } });
   if (!user || !user.active) throw httpError(401, 'Account not found or deactivated');
 
-  // Rotation: revoke old, issue new (detects token reuse — stolen tokens become invalid).
-  await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
-  const issued = await issueTokens(user.id, user.email, user.role as 'user' | 'admin');
+  // Rotation: atomically revoke the old token ONLY if it is still un-revoked.
+  // The conditional updateMany returns affected-count=0 if a concurrent caller
+  // already revoked it (token reuse / replay race) → we treat it as invalid.
+  const revoked = await prisma.refreshToken.updateMany({
+    where: { id: stored.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (revoked.count === 0) throw httpError(401, 'Refresh token invalid or expired');
+
+  const issued = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
   return { access: issued.access, refresh: issued.refresh, sub: user.id, email: user.email, role: user.role as 'user' | 'admin' };
 }
 

@@ -3,18 +3,18 @@ export function AppFooter() {
     <footer className="pm-footer" role="contentinfo">
       <div className="pm-footer__inner">
         <nav className="pm-footer__links" aria-label="Footer navigation">
-          <a href="https://www.nlm.nih.gov/" target="_blank" rel="noopener noreferrer">NLM</a>
+          <a href="#">About MedSearch</a>
           <span className="pm-footer__sep">|</span>
-          <a href="https://www.nih.gov/" target="_blank" rel="noopener noreferrer">NIH</a>
+          <a href="#">Privacy Policy</a>
           <span className="pm-footer__sep">|</span>
-          <a href="https://www.hhs.gov/" target="_blank" rel="noopener noreferrer">HHS</a>
+          <a href="#">Terms of Service</a>
           <span className="pm-footer__sep">|</span>
-          <a href="https://www.usa.gov/" target="_blank" rel="noopener noreferrer">USA.gov</a>
+          <a href="#">Contact Us</a>
         </nav>
         <p className="pm-footer__copy">
-          National Center for Biotechnology Information, U.S. National Library of Medicine
+          MedSearch Semantic Search Platform
           <br />
-          8600 Rockville Pike, Bethesda MD, 20894 USA
+          Built by independent developers. Not affiliated with NIH or NLM.
         </p>
       </div>
     </footer>
