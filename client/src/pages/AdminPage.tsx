@@ -4,7 +4,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
 import { Badge } from '../components/ui/Badge';
 import { useToast } from '../context/ToastContext';
-import { Users, Activity, HeartPulse, TrendingUp, Database, ShieldOff, Lock, Trash2, UserCog } from 'lucide-react';
+import { Users, Activity, HeartPulse, TrendingUp, Database, ShieldOff, Lock, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from 'recharts';
 
 export function AdminPage() {

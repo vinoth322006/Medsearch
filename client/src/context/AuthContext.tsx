@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
-import { api, User, setAccessToken, setAuthFailureHandler, getAccessToken } from '../api';
+import { api, User, setAccessToken, setAuthFailureHandler } from '../api';
 
 interface AuthState {
   user: User | null;
