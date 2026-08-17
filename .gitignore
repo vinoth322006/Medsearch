@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+server/dist/
+client/dist/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.prod
+server/.env
+server/.env.prod
+client/.env.local
+
+# Logs
+*.log
+*.err.log
+*.out.log
+
+# Docker volumes (local dev)
+medsearch_pgdata/
+medsearch_redisdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
