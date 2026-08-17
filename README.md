@@ -88,6 +88,8 @@ The `npm run seed` command creates a default admin account so you can view the d
 *   **Password:** `AdminPass!2024`
 *(Change this immediately in the Profile page).*
 
+Override with env vars `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` before running `npm run seed`.
+
 ---
 
 ## 🌍 Production Deployment
@@ -115,19 +117,66 @@ MedSearch acts as a fast, intelligent wrapper around NCBI's infrastructure. It i
 | Variable | Required | Example | Description |
 |---|---|---|---|
 | `DATABASE_URL` | yes | `postgresql://medisearch:medisearch_dev@localhost:5432/medisearch?schema=public` | Prisma Postgres URL |
-| `REDIS_URL` | yes | `redis://localhost:6379` | Redis connection string |
-| `PORT` | no | `4000` | Backend port |
-| `NODE_ENV` | yes | `development` | `development` or `production` |
-| `JWT_ACCESS_SECRET` | yes | `<random 32+ bytes>` | Signs short-lived access tokens |
-| `JWT_REFRESH_SECRET` | yes | `<random 32+ bytes>` | Signs refresh tokens |
-| `ACCESS_TOKEN_TTL` | no | `15m` | Access token lifetime |
-| `REFRESH_TOKEN_TTL_DAYS` | no | `30` | Refresh token lifetime in days |
-| `CORS_ORIGIN` | yes | `http://localhost:5173` | Allowed frontend origin (use HTTPS domain in prod) |
+| `REDIS_URL` | yes | `redis://localhost:6379` | Redis for caching + rate-limit counters |
+| `PORT` | no | `4000` | backend port |
+| `NODE_ENV` | yes | `development` | dev/staging/production |
+| `JWT_ACCESS_SECRET` | yes | `<random 32+ bytes>` | signs short-lived access tokens |
+| `JWT_REFRESH_SECRET` | yes | `<random 32+ bytes>` | signs refresh tokens (db-hashed too) |
+| `ACCESS_TOKEN_TTL` | no | `15m` | access token lifetime |
+| `REFRESH_TOKEN_TTL_DAYS` | no | `30` | refresh token lifetime in days |
+| `LITSENSE_BASE_URL` | no | `https://www.ncbi.nlm.nih.gov/research/litsense-api/api/` | retrieval backend |
+| `LITSENSE_TIMEOUT_MS` | no | `8000` | per-request timeout |
+| `LITSENSE_MIN_INTERVAL_MS` | no | `1000` | global throttle (1 req/sec shared) |
+| `EUTILS_BASE_URL` | no | `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/` | article metadata |
+| `EUTILS_API_KEY` | no | `<ncbi api key>` | raises E-utilities rate limit; optional |
+| `EUTILS_TIMEOUT_MS` | no | `8000` | per-request timeout |
+| `EUTILS_MIN_INTERVAL_MS` | no | `334` (no key) / `100` (with key) | E-utilities throttle |
+| `SEARCH_CACHE_TTL_SEC` | no | `1200` | LitSense result cache TTL (20 min default) |
+| `META_CACHE_TTL_SEC` | no | `2592000` | metadata cache TTL (30 days; effectively permanent) |
+| `ANON_IP_RATE_LIMIT_PER_MIN` | no | `12` | anonymous per-IP search quota |
+| `AUTH_RATE_LIMIT_PER_MIN` | no | `30` | authenticated per-user search quota |
+| `LOGIN_MAX_ATTEMPTS` | no | `5` | brute-force lockout threshold |
+| `LOGIN_LOCKOUT_MIN` | no | `15` | lockout duration after threshold |
+| `CORS_ORIGIN` | no | `http://localhost:5173` | allowed frontend origin |
+| `SEED_ADMIN_EMAIL` | no | `admin@medsearch.local` | seed admin email |
+| `SEED_ADMIN_PASSWORD` | no | `AdminPass!2024` | seed admin password |
+| `LOG_LEVEL` | no | `info` | pino log level |
 
 ### `client/.env.local` (Frontend)
 | Variable | Required | Example | Description |
 |---|---|---|---|
 | `VITE_API_BASE` | yes | `http://localhost:4000` | Backend API base URL. Leave empty in production so it uses relative paths. |
+
+---
+
+## 🔐 Access Tiers
+
+| Tier | Search | Bookmarks | History | Admin |
+|---|---|---|---|---|
+| Anonymous | yes (lower per-IP quota) | no | no | no |
+| Registered | yes | yes (folder/tag optional) | yes (re-runnable) | no |
+| Admin | yes | yes | yes | yes — users + analytics |
+
+Anonymous users see a low-friction "sign up to save this" prompt only **after** their first search — never a signup wall before they can try the product.
+
+---
+
+## 🛡️ Privacy Defaults
+
+By default, **admins cannot see another user's raw search query text or bookmark contents**.
+The admin dashboard shows **aggregate/anonymized** activity:
+
+- Total searches over time, most-common query terms (top-N across all users, not attributed), active-user counts (DAU/WAU/MAU), anonymous-vs-authenticated split, system health.
+
+If the client requires per-user raw query visibility, set `ADMIN_CAN_VIEW_USER_QUERIES=true` in `server/.env`; a dedicated, explicitly-labeled "view raw queries for this user" endpoint then becomes available. This is **off by default** to respect researcher privacy.
+
+---
+
+## 🚫 Out of Scope
+*   Custom search index / embedding model (this app is intentionally a reliable layer over NCBI's existing LitSense infrastructure).
+*   Payment/billing.
+*   Multi-tenant org support beyond `user` / `admin` roles.
+*   Mobile native apps (responsive web is the target).
 
 ---
 
