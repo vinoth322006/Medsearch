@@ -35,16 +35,23 @@ RUN npm run build
 FROM node:20-alpine AS runner
 
 WORKDIR /app
+
+# OpenSSL is required by Prisma to detect the engine variant
+RUN apk add --no-cache openssl
+
 ENV NODE_ENV=production
 
 # Install production server deps only
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev
 
-# Copy Prisma schema + generated client
+# Copy Prisma schema + generated client + engines from builder
 COPY --from=server-builder /server/prisma ./prisma/
 COPY --from=server-builder /server/node_modules/.prisma ./node_modules/.prisma
 COPY --from=server-builder /server/node_modules/@prisma ./node_modules/@prisma
+
+# Re-generate Prisma client as root (ensures engine binaries have correct permissions)
+RUN npx prisma generate
 
 # Copy compiled Express server
 COPY --from=server-builder /server/dist ./dist/
@@ -52,11 +59,12 @@ COPY --from=server-builder /server/dist ./dist/
 # Copy built React SPA into /app/public (Express serves this in production)
 COPY --from=client-builder /client/dist ./public/
 
-# Non-root user for security
+# Non-root user for security (server runs as this user)
 RUN addgroup -S medsearch && adduser -S medsearch -G medsearch
-USER medsearch
+RUN chown -R medsearch:medsearch /app
 
 EXPOSE 4000
 
-# Run migrations then start Express (serves both API + frontend)
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Migrations run as root (needs write to engines), then server starts as medsearch
+CMD ["sh", "-c", "npx prisma migrate deploy && su -s /bin/sh medsearch -c 'node dist/server.js'"]
+
