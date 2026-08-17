@@ -1,4 +1,4 @@
-# 🧬 MedSearch — PubMed Semantic Search
+# 🧬 MedScholar — PubMed Semantic Search
 
 A production-grade web application for biomedical researchers to search PubMed/PMC using **natural-language semantic search** (powered by NCBI's public Semantic Engine API). It includes full user authentication, role-based access, advanced bookmarking, search history, and an admin analytics dashboard.
 
@@ -86,7 +86,7 @@ Open `http://localhost:5173` in your browser. You can search immediately as an a
 
 ## 🌍 Production Deployment
 
-MedSearch is fully configured for automated deployment to an AWS EC2 instance. 
+MedScholar is fully configured for automated deployment to an AWS EC2 instance. 
 
 We have a dedicated, highly-detailed guide for production deployment. Please see:
 👉 **[DEPLOYMENT.md](./DEPLOYMENT.md)**
@@ -95,7 +95,7 @@ We have a dedicated, highly-detailed guide for production deployment. Please see
 
 ## 🔌 External API Integrations
 
-MedSearch acts as a fast, intelligent wrapper around NCBI's infrastructure. It is designed to be highly respectful of NCBI's servers.
+MedScholar acts as a fast, intelligent wrapper around NCBI's infrastructure. It is designed to be highly respectful of NCBI's servers.
 
 *   **Semantic Engine:** Used for semantic retrieval. We enforce a **global 1 request/sec limit** across all users to protect our IP from being banned by NCBI.
 *   **E-utilities (esummary):** Used to fetch rich metadata (authors, journal, publication date) for the PMIDs returned by SemanticEngine.

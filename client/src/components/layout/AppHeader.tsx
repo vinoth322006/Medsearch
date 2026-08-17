@@ -24,8 +24,8 @@ function PubMedLogo({ className, white }: { className?: string; white?: boolean 
   );
 }
 
-/** MedSearch Logo */
-function MedSearchLogo() {
+/** MedScholar Logo */
+function MedScholarLogo() {
   return (
     <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
       <rect x="1" y="1" width="40" height="40" rx="3" stroke="#fff" strokeWidth="2" fill="none"/>
@@ -80,9 +80,9 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       <div className="pm-header__top">
         <div className="pm-header__top-inner container-wide">
           <NavLink to="/" className="pm-header__nlm-link" end>
-            <MedSearchLogo />
+            <MedScholarLogo />
             <div className="pm-header__nlm-text">
-              <span className="pm-header__nlm-name">MedSearch Platform</span>
+              <span className="pm-header__nlm-name">MedScholar Platform</span>
               <span className="pm-header__nlm-sub">Advanced Semantic Search Engine</span>
             </div>
           </NavLink>
@@ -136,7 +136,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       {compact && (
         <div className="pm-header__search-row">
           <div className="pm-header__search-inner container-wide">
-            <NavLink to="/" className="pm-header__logo-link" aria-label="MedSearch home" end>
+            <NavLink to="/" className="pm-header__logo-link" aria-label="MedScholar home" end>
               <PubMedLogo />
             </NavLink>
             <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch}>

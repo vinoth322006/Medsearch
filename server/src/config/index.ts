@@ -63,8 +63,11 @@ export const config = {
     loginLockoutMin: int('LOGIN_LOCKOUT_MIN', 15),
   },
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  cookieSecure: process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === 'true'
+    : (process.env.NODE_ENV ?? 'development') === 'production',
   seed: {
-    adminEmail: process.env.SEED_ADMIN_EMAIL ?? 'admin@medsearch.local',
+    adminEmail: process.env.SEED_ADMIN_EMAIL ?? 'admin@medscholar.local',
     adminPassword: process.env.SEED_ADMIN_PASSWORD ?? 'AdminPass!2024',
   },
   adminCanViewUserQueries: (process.env.ADMIN_CAN_VIEW_USER_QUERIES ?? 'false') === 'true',

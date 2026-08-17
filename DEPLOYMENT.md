@@ -1,6 +1,6 @@
-# MedSearch: Complete AWS EC2 Deployment Guide
+# MedScholar: Complete AWS EC2 Deployment Guide
 
-This document provides a **complete, step-by-step, beginner-friendly guide** to deploying MedSearch on an AWS EC2 instance. It covers everything from launching the server to setting up automatic HTTPS.
+This document provides a **complete, step-by-step, beginner-friendly guide** to deploying MedScholar on an AWS EC2 instance. It covers everything from launching the server to setting up automatic HTTPS.
 
 ---
 
@@ -23,15 +23,15 @@ Before we start, it's important to understand *what* we are deploying. We are us
 1. Log into your **AWS Management Console**.
 2. Search for and select **EC2**.
 3. Click the orange **Launch instance** button.
-4. **Name:** Enter `MedSearch-Production`.
+4. **Name:** Enter `MedScholar-Production`.
 5. **Application and OS Images (AMI):** Select **Ubuntu** and ensure **Ubuntu Server 24.04 LTS (HVM)** is chosen.
 6. **Instance Type:** Select **`t3.small`** (2 vCPU, 2GB RAM). *Note: `t2.micro` (free tier) is often too small to reliably build Node.js applications and might crash during the build process.*
 7. **Key pair (login):**
     *   Click **Create new key pair**.
-    *   Name it `medsearch-key`.
+    *   Name it `medscholar-key`.
     *   Key pair type: **RSA**.
     *   Private key file format: **.pem**.
-    *   Click **Create key pair**. Your browser will download a file named `medsearch-key.pem`. **Keep this safe!**
+    *   Click **Create key pair**. Your browser will download a file named `medscholar-key.pem`. **Keep this safe!**
 8. **Network settings:**
     *   Check **Allow SSH traffic from** -> Select **Anywhere** (or your specific IP).
     *   Check **Allow HTTP traffic from the internet**.
@@ -47,13 +47,13 @@ Once launched, go to your Instances list, click on the new instance, and copy it
 
 Because you downloaded a `.pem` file, Windows requires strict permissions on this file before it will let you connect.
 
-1. Move the downloaded `medsearch-key.pem` file to a permanent location, e.g., `C:\Users\YourName\.ssh\medsearch-key.pem`.
+1. Move the downloaded `medscholar-key.pem` file to a permanent location, e.g., `C:\Users\YourName\.ssh\medscholar-key.pem`.
 2. Open **PowerShell** as an administrator (or standard user, but be in your home directory).
 3. Run the following commands to secure the file (replace the path with your actual path):
 
 ```powershell
 # 1. Define the path to your key
-$key = "C:\Users\YourName\Downloads\medsearch-key.pem"
+$key = "C:\Users\YourName\Downloads\medscholar-key.pem"
 
 # 2. Remove inherited permissions (so other users can't read it)
 icacls $key /inheritance:r
@@ -65,7 +65,7 @@ icacls $key /grant "${env:USERNAME}:R"
 4. Now, connect to the server using SSH (replace `YOUR_EC2_IP` with the Public IPv4 address from AWS):
 
 ```powershell
-ssh -i "C:\Users\YourName\Downloads\medsearch-key.pem" ubuntu@YOUR_EC2_IP
+ssh -i "C:\Users\YourName\Downloads\medscholar-key.pem" ubuntu@YOUR_EC2_IP
 ```
 
 *Type `yes` if it asks to accept the fingerprint.*
@@ -79,13 +79,13 @@ You are now logged into the Ubuntu server. We will use the automated deployment 
 1. **Clone your repository** into the `/opt` directory:
 
 ```bash
-sudo git clone https://github.com/vinoth322006/Medsearch.git /opt/medsearch
+sudo git clone https://github.com/vinoth322006/MedScholar.git /opt/medscholar
 ```
 
 2. **Navigate to the folder and make the script executable:**
 
 ```bash
-cd /opt/medsearch
+cd /opt/medscholar
 sudo chmod +x deploy-ec2.sh
 ```
 
@@ -114,7 +114,7 @@ Wait for the script to finish. It will print a success message with your IP addr
 Open your web browser and go to:
 `http://YOUR_EC2_IP`
 
-You should see the MedSearch application running perfectly!
+You should see the MedScholar application running perfectly!
 
 ### Logging in as Admin
 The deployment script automatically created an admin account using the credentials configured in your `server/.env.prod` file (look for `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`).
@@ -130,15 +130,15 @@ Right now, you are accessing the site via an IP address over insecure HTTP. To g
 1. **Point your domain to your EC2 instance:**
     *   Log into your domain registrar (GoDaddy, Namecheap, Route53, etc.).
     *   Create an **A Record**.
-    *   Set the Host/Name to `@` (or `www`, or `medsearch`).
+    *   Set the Host/Name to `@` (or `www`, or `medscholar`).
     *   Set the Value/IP to your **EC2 Public IPv4 address**.
     *   Wait a few minutes for DNS to propagate.
 
-2. **Update the MedSearch configuration:**
+2. **Update the MedScholar configuration:**
     In your SSH terminal on the EC2 server:
 
 ```bash
-cd /opt/medsearch
+cd /opt/medscholar
 ```
 
 Edit the environment variables to tell the app its new URL:
@@ -157,7 +157,7 @@ sudo nano .env
 ```bash
 sudo nano Caddyfile
 ```
-Change `medsearch.yourdomain.com` at the top of the file to your actual domain name. Save and exit.
+Change `medscholar.yourdomain.com` at the top of the file to your actual domain name. Save and exit.
 
 Copy the Caddyfile to the system configuration and restart Caddy:
 
@@ -179,7 +179,7 @@ Your site is now securely available at `https://yourdomain.com`! Caddy will auto
 
 ## 🛠️ Cheat Sheet: Useful Commands
 
-Run these commands from inside the `/opt/medsearch` directory on your EC2 instance.
+Run these commands from inside the `/opt/medscholar` directory on your EC2 instance.
 
 **Viewing Logs:**
 *   View all logs: `sudo docker compose -f docker-compose.prod.yml logs -f`

@@ -12,7 +12,7 @@ interface Props {
   index: number;
   globalIndex: number;
   isBookmarked: (pmid: number | null, text: string) => boolean;
-  onBookmarkChange?: () => void;
+  onBookmarkChange?: (pmid: number | null, text: string) => void;
   selected?: boolean;
   onSelect?: (checked: boolean) => void;
   displayFormat?: string;
@@ -64,7 +64,7 @@ export function SearchResultCard({ result, query, index, globalIndex, isBookmark
       });
       notify('Saved to bookmarks.', 'success');
       setJustSaved(true);
-      onBookmarkChange?.();
+      onBookmarkChange?.(result.pmid, result.text);
     } catch (e) {
       notify((e as { message?: string })?.message ?? 'Could not save bookmark.', 'error');
     } finally { setSaving(false); }

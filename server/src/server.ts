@@ -37,13 +37,13 @@ if (config.isProd) {
   });
 } else {
   // Dev mode: simple health check at root
-  app.get('/', (_req, res) => res.json({ name: 'MedSearch API', status: 'ok', ts: new Date().toISOString() }));
+  app.get('/', (_req, res) => res.json({ name: 'MedScholar API', status: 'ok', ts: new Date().toISOString() }));
 }
 
 app.use(notFound);
 app.use(errorHandler);
 
-const server = app.listen(config.port, () => logger.info(`MedSearch backend listening on :${config.port} (${config.nodeEnv})`));
+const server = app.listen(config.port, () => logger.info(`MedScholar backend listening on :${config.port} (${config.nodeEnv})`));
 
 // Fail fast on unhandled rejections / uncaught exceptions so process managers
 // restart us cleanly instead of running in an inconsistent state.

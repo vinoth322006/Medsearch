@@ -1,5 +1,5 @@
 {
-  "name": "medsearch-server",
+  "name": "medscholar-server",
   "version": "1.0.0",
   "description": "PubMed semantic search backend (Semantic Engine wrapper with auth, bookmarks, history, admin analytics)",
   "private": true,

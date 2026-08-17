@@ -1,14 +1,14 @@
 # =============================================================================
-# Caddyfile — Automatic HTTPS reverse proxy for MedSearch
+# Caddyfile — Automatic HTTPS reverse proxy for MedScholar
 # =============================================================================
-# Replace "medsearch.yourdomain.com" with your actual domain.
+# Replace "medscholar.yourdomain.com" with your actual domain.
 # Caddy automatically obtains & renews Let's Encrypt SSL certificates.
 #
 # Install on EC2:  sudo apt install -y caddy
 # Start:           sudo systemctl enable --now caddy
 # =============================================================================
 
-medsearch.yourdomain.com {
+medscholar.yourdomain.com {
     reverse_proxy localhost:4000
 
     # Gzip/Brotli compression for static assets

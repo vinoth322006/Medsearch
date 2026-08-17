@@ -10,7 +10,7 @@ const REFRESH_COOKIE = 'ms_rt';
 export function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
-    secure: config.isProd,
+    secure: config.cookieSecure,
     sameSite: 'strict',    // mitigates CSRF on the cookie-based refresh flow
     path: '/api/auth',
     maxAge: config.jwt.refreshTtlDays * 24 * 60 * 60 * 1000,
@@ -18,7 +18,7 @@ export function setRefreshCookie(res: Response, token: string): void {
 }
 
 export function clearRefreshCookie(res: Response): void {
-  res.clearCookie(REFRESH_COOKIE, { path: '/api/auth', httpOnly: true, sameSite: 'strict', secure: config.isProd });
+  res.clearCookie(REFRESH_COOKIE, { path: '/api/auth', httpOnly: true, sameSite: 'strict', secure: config.cookieSecure });
 }
 
 export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {

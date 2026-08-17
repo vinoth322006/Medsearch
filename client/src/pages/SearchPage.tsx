@@ -14,12 +14,6 @@ import { applyFilters, labelFor, FILTER_GROUP_LABELS, calculateFilterCounts } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PubMedLogo } from '../components/layout/AppHeader';
 
-const SAMPLE_QUERIES = [
-  'mechanism of insulin resistance in type 2 diabetes',
-  'CRISPR base editing off-target effects',
-  'role of the microbiome in Alzheimer progression',
-  'efficacy of mRNA vaccines against SARS-CoV-2 variants',
-];
 
 function SkeletonCard() {
   return (
@@ -89,7 +83,7 @@ function sortResults(results: SearchResultItem[], sortBy: string): SearchResultI
 /** Format a list of results as a plain-text bundle for email / clipboard / download. */
 function formatItemsAsText(items: SearchResultItem[], query: string): string {
   const header = [
-    'MedSearch — Results Export',
+    'MedScholar — Results Export',
     '='.repeat(40),
     '',
     `Search query: ${query}`,
@@ -239,6 +233,11 @@ export function SearchPage() {
   useEffect(() => { setJustSaved(new Set()); }, [data]);
   const isBookmarked = useCallback((_pmid: number | null, text: string) => justSaved.has(_pmid + '|' + text), [justSaved]);
 
+  // Update parent justSaved Set when an individual card is bookmarked
+  const handleSingleBookmark = useCallback((pmid: number | null, text: string) => {
+    const key = (pmid ?? 'null') + '|' + text;
+    setJustSaved((prev) => new Set([...prev, key]));
+  }, []);
   // ============================================================
   // Bulk actions (Save / Email / Send to) — operate on the
   // checkbox-selected results, or fall back to the entire page.
@@ -286,7 +285,7 @@ export function SearchPage() {
 
   const handleBulkEmail = useCallback((items: SearchResultItem[]) => {
     if (items.length === 0) { notify('No results to email.', 'info'); return; }
-    const subject = encodeURIComponent(`MedSearch — ${items.length} result${items.length === 1 ? '' : 's'}`);
+    const subject = encodeURIComponent(`MedScholar — ${items.length} result${items.length === 1 ? '' : 's'}`);
     const body = encodeURIComponent(formatItemsAsText(items, query));
     const url = `mailto:?subject=${subject}&body=${body}`;
     window.location.href = url;
@@ -322,7 +321,7 @@ export function SearchPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `medsearch-results-${items.length}.txt`;
+        a.download = `medscholar-results-${items.length}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -345,8 +344,10 @@ export function SearchPage() {
             <div className="pm-hero__logo">
               <PubMedLogo white />
             </div>
+            <p className="pm-hero__tagline">Advanced Semantic Search Engine</p>
             <form className="pm-hero__form" role="search" onSubmit={onSubmit}>
               <div className="pm-hero__search-box">
+                <SearchIcon size={20} className="pm-hero__search-icon" />
                 <input
                   ref={inputRef}
                   id="search-query"
@@ -354,7 +355,7 @@ export function SearchPage() {
                   className="pm-hero__input"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search PubMed"
+                  placeholder="Search PubMed — try natural language queries"
                   autoComplete="off"
                   aria-label="Search query"
                 />
@@ -368,31 +369,12 @@ export function SearchPage() {
             </form>
 
             <p className="pm-hero__desc">
-              PubMed® comprises more than 40 million citations for biomedical literature from MEDLINE, life science journals, and online books. Citations may include links to full text content from PubMed Central and publisher web sites.
+              Search over 40 million biomedical citations from MEDLINE, life science journals, and online books with AI-powered semantic understanding.
             </p>
           </div>
         </section>
 
-        {/* Example queries */}
-        <section className="pm-home__samples container">
-          <h2>Example searches</h2>
-          <div className="pm-home__chips">
-            {SAMPLE_QUERIES.map((q) => (
-              <button key={q} className="pm-home__chip" onClick={() => navigate(`/?q=${encodeURIComponent(q)}`)}>
-                <SearchIcon size={14} /> {q}
-              </button>
-            ))}
-          </div>
-
-          {!user && (
-            <div className="pm-home__cta">
-              <p>Create a free account to save bookmarks and keep search history.</p>
-              <Link to="/signup" className="btn btn--primary btn--sm">Sign up free</Link>
-            </div>
-          )}
-        </section>
-
-        {/* Four feature cards */}
+        {/* Feature cards */}
         <section className="pm-home__features container" aria-label="Features">
           <div className="pm-home__feature-grid">
             <button
@@ -400,36 +382,44 @@ export function SearchPage() {
               className="pm-home__feature-card"
               onClick={() => { inputRef.current?.focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             >
-              <span className="pm-home__feature-icon" aria-hidden="true">🔍</span>
+              <span className="pm-home__feature-icon pm-home__feature-icon--search" aria-hidden="true">
+                <SearchIcon size={22} />
+              </span>
               <span className="pm-home__feature-title">Semantic Search</span>
-              <span className="pm-home__feature-desc">AI-powered search over 40M+ PubMed articles using natural language.</span>
+              <span className="pm-home__feature-desc">AI-powered natural language search across 40M+ PubMed articles.</span>
             </button>
             <Link
               id="feature-bookmarks"
               to={user ? '/bookmarks' : '/signup'}
               className="pm-home__feature-card"
             >
-              <span className="pm-home__feature-icon" aria-hidden="true">🔖</span>
+              <span className="pm-home__feature-icon pm-home__feature-icon--bookmarks" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </span>
               <span className="pm-home__feature-title">Bookmarks</span>
-              <span className="pm-home__feature-desc">Save and organize articles with folders and tags for future reference.</span>
+              <span className="pm-home__feature-desc">Save and organize articles for quick future reference.</span>
             </Link>
             <Link
               id="feature-history"
               to={user ? '/history' : '/signup'}
               className="pm-home__feature-card"
             >
-              <span className="pm-home__feature-icon" aria-hidden="true">🕐</span>
+              <span className="pm-home__feature-icon pm-home__feature-icon--history" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </span>
               <span className="pm-home__feature-title">Search History</span>
-              <span className="pm-home__feature-desc">Re-run past searches instantly and track your research over time.</span>
+              <span className="pm-home__feature-desc">Re-run past searches and track your research over time.</span>
             </Link>
             <Link
               id="feature-account"
               to={user ? '/profile' : '/signup'}
               className="pm-home__feature-card"
             >
-              <span className="pm-home__feature-icon" aria-hidden="true">👤</span>
+              <span className="pm-home__feature-icon pm-home__feature-icon--profile" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
               <span className="pm-home__feature-title">{user ? 'Your Profile' : 'Free Account'}</span>
-              <span className="pm-home__feature-desc">{user ? 'Manage your account settings and preferences.' : 'Sign up free to unlock bookmarks, history, and more.'}</span>
+              <span className="pm-home__feature-desc">{user ? 'Manage your account settings and preferences.' : 'Sign up free to unlock bookmarks, history & more.'}</span>
             </Link>
           </div>
         </section>
@@ -541,14 +531,16 @@ export function SearchPage() {
               <ol className="pm-results-list" start={(page - 1) * perPage + 1}>
                 {pagedResults.map((r: SearchResultItem, i: number) => {
                   const globalIdx = (page - 1) * perPage + i + 1;
+                  const uniqueKey = r.pmid ? `pmid-${r.pmid}` : `idx-${globalIdx}-${r.text.slice(0, 40)}`;
                   return (
-                    <li key={i} className="pm-results-list__item">
+                    <li key={uniqueKey} className="pm-results-list__item">
                       <SearchResultCard
                         result={r}
                         query={query}
                         index={i}
                         globalIndex={globalIdx}
                         isBookmarked={isBookmarked}
+                        onBookmarkChange={handleSingleBookmark}
                         displayFormat={displayFormat}
                         selected={selected.has(globalIdx)}
                         onSelect={(checked) => {

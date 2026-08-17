@@ -13,7 +13,7 @@ interface FilterSidebarProps {
 
 export function FilterSidebar({ filtersHook, yearData, filterCounts = {} }: FilterSidebarProps) {
   const { toggleFilter, setRadioFilter, isSelected, clearGroup, customRange, setCustomRange, yearRange, setYearRange } = filtersHook;
-  const [additionalOpen, setAdditionalOpen] = useState(true);
+  const [additionalOpen, setAdditionalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const mainFilters = FILTER_CONFIG.filter((g) => !g.additional);

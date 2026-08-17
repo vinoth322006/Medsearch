@@ -44,7 +44,6 @@ export const FILTER_CONFIG: FilterGroup[] = [
       { value: '1y', label: '1 year' },
       { value: '5y', label: '5 years' },
       { value: '10y', label: '10 years' },
-      { value: 'custom', label: 'Custom Range' },
     ],
   },
   {
@@ -54,7 +53,6 @@ export const FILTER_CONFIG: FilterGroup[] = [
     options: [
       { value: 'abstract', label: 'Abstract' },
       { value: 'freeFullText', label: 'Free full text' },
-      { value: 'fullText', label: 'Full text' },
     ],
   },
   {
