@@ -3,7 +3,7 @@ import { config } from '../config';
 import { logger } from '../utils/logger';
 
 // Anonymous per-IP search quota — more aggressive than authed to protect
-// the shared LitSense rate-limit budget from unaccountable traffic.
+// the shared SemanticEngine rate-limit budget from unaccountable traffic.
 export const anonSearchLimiter = rateLimit({
   windowMs: 60_000,
   max: config.rateLimit.anonPerMin,

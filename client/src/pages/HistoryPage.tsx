@@ -4,7 +4,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
-import { History as HistoryIcon, Play, Trash2 } from 'lucide-react';
+import { History as HistoryIcon, Play, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRelative } from '../lib/utils';
 
@@ -48,6 +48,15 @@ export function HistoryPage() {
     try { await api.history.clear(); setHistory([]); notify('Search history cleared.', 'success'); setConfirmClear(false); }
     catch { notify('Could not clear history.', 'error'); }
     finally { setClearing(false); }
+  }
+
+  async function deleteItem(id: string) {
+    try {
+      await api.history.remove(id);
+      setHistory(prev => (prev || []).filter(h => h.id !== id));
+    } catch {
+      notify('Could not delete history item.', 'error');
+    }
   }
 
   function rerun(q: string) {
@@ -96,6 +105,14 @@ export function HistoryPage() {
                   <p className="hist-item__query">{h.query}</p>
                   <span className="hint">{h.resultCount} results · {formatRelative(h.createdAt)}</span>
                 </div>
+                <button 
+                  className="btn btn--ghost btn--icon" 
+                  onClick={() => deleteItem(h.id)} 
+                  aria-label={`Delete search: ${h.query}`}
+                  style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}
+                >
+                  <X size={16} />
+                </button>
               </li>
             ))}
           </ul>

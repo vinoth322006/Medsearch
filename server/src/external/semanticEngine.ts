@@ -1,4 +1,4 @@
-// LitSense 2.0 client — cached + globally throttled.
+// Semantic Engine client — cached + globally throttled.
 // Never throw on external failure: resolve with a DegradedResult letting the
 // caller serve cached results + a clear degraded notice.
 
@@ -7,7 +7,7 @@ import { cacheGet, cacheSet, cacheKeys, normalizeQuery } from '../cache';
 import { GlobalThrottle } from '../cache/globalThrottle';
 import { logger } from '../utils/logger';
 
-export interface LitSenseResult {
+export interface SemanticEngineResult {
   text: string;
   score: number;
   pmid: number | null;
@@ -15,24 +15,24 @@ export interface LitSenseResult {
   section: string;
 }
 
-export interface LitSenseResponse {
+export interface SemanticEngineResponse {
   ok: boolean;
   source: 'live' | 'cache' | 'degraded';
   degradedMessage?: string;
-  results: LitSenseResult[];
+  results: SemanticEngineResult[];
   cacheHit: boolean;
   latencyMs: number;
 }
 
-const throttle = new GlobalThrottle(config.litsense.minIntervalMs, 'litsense');
+const throttle = new GlobalThrottle(config.semanticEngine.minIntervalMs, 'semanticEngine');
 
-export async function searchLitSense(query: string, rerank: boolean): Promise<LitSenseResponse> {
+export async function searchSemanticEngine(query: string, rerank: boolean): Promise<SemanticEngineResponse> {
   const start = Date.now();
   const normalized = normalizeQuery(query);
   const key = cacheKeys.search(normalized, rerank);
 
   // 1) Try cache first — never touches the rate limit budget.
-  const cached = await cacheGet<LitSenseResult[]>(key);
+  const cached = await cacheGet<SemanticEngineResult[]>(key);
   if (cached) {
     return { ok: true, source: 'cache', results: cached, cacheHit: true, latencyMs: Date.now() - start };
   }
@@ -40,12 +40,12 @@ export async function searchLitSense(query: string, rerank: boolean): Promise<Li
   // 2) Live fetch, throttled.
   try {
     await throttle.acquire();
-    const url = new URL(config.litsense.baseUrl);
+    const url = new URL(config.semanticEngine.baseUrl);
     url.searchParams.set('query', query);
     url.searchParams.set('rerank', String(rerank));
 
     const controller = new AbortController();
-    const to = setTimeout(() => controller.abort(), config.litsense.timeoutMs);
+    const to = setTimeout(() => controller.abort(), config.semanticEngine.timeoutMs);
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
@@ -53,18 +53,18 @@ export async function searchLitSense(query: string, rerank: boolean): Promise<Li
     clearTimeout(to);
 
     if (!res.ok) {
-      throw new Error(`LitSense HTTP ${res.status}`);
+      throw new Error(`SemanticEngine HTTP ${res.status}`);
     }
     const raw = (await res.json()) as unknown;
     const results = sanitizeResults(raw);
     await cacheSet(key, results, config.cache.searchTtlSec);
     return { ok: true, source: 'live', results, cacheHit: false, latencyMs: Date.now() - start };
   } catch (err) {
-    logger.warn({ err, query: normalized }, 'LitSense request failed — attempting cached fallback');
+    logger.warn({ err, query: normalized }, 'SemanticEngine request failed — attempting cached fallback');
 
     // Graceful fallback: try the cache once more (may have been populated
     // concurrently by another request). If still empty, report degraded.
-    const fallback = await cacheGet<LitSenseResult[]>(key);
+    const fallback = await cacheGet<SemanticEngineResult[]>(key);
     if (fallback && fallback.length > 0) {
       return {
         ok: true,
@@ -86,9 +86,9 @@ export async function searchLitSense(query: string, rerank: boolean): Promise<Li
   }
 }
 
-function sanitizeResults(raw: unknown): LitSenseResult[] {
+function sanitizeResults(raw: unknown): SemanticEngineResult[] {
   if (!Array.isArray(raw)) return [];
-  const out: LitSenseResult[] = [];
+  const out: SemanticEngineResult[] = [];
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
     const r = item as Record<string, unknown>;
@@ -100,5 +100,5 @@ function sanitizeResults(raw: unknown): LitSenseResult[] {
       section: typeof r.section === 'string' ? r.section : '',
     });
   }
-  return out.slice(0, config.litsense.maxResults);
+  return out.slice(0, config.semanticEngine.maxResults);
 }

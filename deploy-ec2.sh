@@ -87,6 +87,7 @@ fi
 ACCESS_SECRET=$(openssl rand -hex 32)
 REFRESH_SECRET=$(openssl rand -hex 32)
 PG_PASSWORD=$(openssl rand -hex 16)
+ADMIN_PASSWORD=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9!@#$' | head -c 16)
 
 if [ ! -f "$APP_DIR/server/.env.prod" ]; then
   cat > "$APP_DIR/server/.env.prod" <<EOF
@@ -98,9 +99,8 @@ JWT_ACCESS_SECRET=${ACCESS_SECRET}
 JWT_REFRESH_SECRET=${REFRESH_SECRET}
 ACCESS_TOKEN_TTL=15m
 REFRESH_TOKEN_TTL_DAYS=30
-LITSENSE_BASE_URL=https://www.ncbi.nlm.nih.gov/research/litsense-api/api/
-LITSENSE_TIMEOUT_MS=8000
-LITSENSE_MIN_INTERVAL_MS=1000
+SEMANTIC_ENGINE_TIMEOUT_MS=8000
+SEMANTIC_ENGINE_MIN_INTERVAL_MS=1000
 EUTILS_BASE_URL=https://eutils.ncbi.nlm.nih.gov/entrez/eutils/
 EUTILS_API_KEY=
 EUTILS_TIMEOUT_MS=8000
@@ -113,7 +113,7 @@ LOGIN_MAX_ATTEMPTS=5
 LOGIN_LOCKOUT_MIN=15
 CORS_ORIGIN=http://localhost
 SEED_ADMIN_EMAIL=admin@medsearch.local
-SEED_ADMIN_PASSWORD=AdminPass!2024
+SEED_ADMIN_PASSWORD=${ADMIN_PASSWORD}
 ADMIN_CAN_VIEW_USER_QUERIES=false
 LOG_LEVEL=info
 EOF
@@ -166,6 +166,11 @@ echo "  3. Edit Caddyfile: replace 'medsearch.yourdomain.com' with your domain"
 echo "  4. Set HOST_PORT=4000 in .env (Caddy will take port 80/443)"
 echo "  5. Restart:     docker compose -f docker-compose.prod.yml up -d"
 echo "  6. Start Caddy: sudo cp Caddyfile /etc/caddy/Caddyfile && sudo systemctl restart caddy"
+echo ""
+echo -e "  ${YELLOW}Admin credentials (auto-generated — save these now):${NC}"
+echo "  Email:    admin@medsearch.local"
+echo "  Password: ${ADMIN_PASSWORD}"
+echo -e "  ${YELLOW}⚠  Change the admin password immediately after first login!${NC}"
 echo ""
 echo -e "  ${YELLOW}Commands:${NC}"
 echo "  Logs:     docker compose -f docker-compose.prod.yml logs -f"

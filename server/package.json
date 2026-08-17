@@ -1,7 +1,7 @@
 {
   "name": "medsearch-server",
   "version": "1.0.0",
-  "description": "PubMed semantic search backend (LitSense 2.0 wrapper with auth, bookmarks, history, admin analytics)",
+  "description": "PubMed semantic search backend (Semantic Engine wrapper with auth, bookmarks, history, admin analytics)",
   "private": true,
   "type": "commonjs",
   "main": "dist/server.js",

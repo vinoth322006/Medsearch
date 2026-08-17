@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/prisma';
-import { login, signup, logout, rotateRefresh, changePassword, updateProfile, deleteAccount, setRefreshCookie, clearRefreshCookie } from '../services/auth.service';
+import { login, signup, logout, rotateRefresh, changePassword, updateProfile, deleteAccount, requestPasswordReset, resetPassword, setRefreshCookie, clearRefreshCookie } from '../services/auth.service';
 import { checkLoginLockout, logRateLimitHit } from '../middleware/rateLimit';
 import { authRequired } from '../middleware/auth';
 
@@ -12,6 +12,8 @@ const signupSchema = z.object({ email: z.string().email(), password: z.string().
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const changePwSchema = z.object({ currentPassword: z.string(), newPassword: z.string().min(8) });
 const profileSchema = z.object({ name: z.string().nullable().optional() });
+const forgotPwSchema = z.object({ email: z.string().email() });
+const resetPwSchema = z.object({ token: z.string().min(1), password: z.string().min(8) });
 
 router.post('/signup', async (req, res, next) => {
   try {
@@ -54,7 +56,7 @@ router.post('/refresh', async (req, res, next) => {
     if (!token) { res.status(401).json({ error: 'No refresh token' }); return; }
     const out = await rotateRefresh(token, req);
     setRefreshCookie(res, out.refresh);
-    res.json({ accessToken: out.access, user: { id: out.sub, email: out.email, role: out.role } });
+    res.json({ accessToken: out.access, user: { id: out.sub, email: out.email, name: out.name, role: out.role } });
   } catch (e) { next(e); }
 });
 
@@ -89,6 +91,21 @@ router.delete('/account', authRequired, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const parsed = forgotPwSchema.parse(req.body);
+    await requestPasswordReset(parsed.email);
+    // Always return success to prevent email enumeration
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const parsed = resetPwSchema.parse(req.body);
+    await resetPassword(parsed.token, parsed.password);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 export default router;
-
-

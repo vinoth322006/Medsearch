@@ -20,10 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    if (!getAccessToken()) { setLoading(false); return; }
     try {
-      const { user } = await api.auth.me();
-      setUser(user);
+      // Always attempt a silent refresh via the HttpOnly cookie.
+      // This restores the session after a page reload (access token is in-memory only).
+      const refreshRes = await fetch(
+        `${import.meta.env.VITE_API_BASE ?? 'http://localhost:4000'}/api/auth/refresh`,
+        { method: 'POST', credentials: 'include' },
+      );
+      if (refreshRes.ok) {
+        const data = (await refreshRes.json()) as { accessToken: string; user: User };
+        setAccessToken(data.accessToken);
+        setUser(data.user);
+      } else {
+        // No valid refresh cookie — user is not logged in
+        setAccessToken(null);
+        setUser(null);
+      }
     } catch {
       setAccessToken(null);
       setUser(null);

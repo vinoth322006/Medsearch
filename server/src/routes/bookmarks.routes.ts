@@ -66,6 +66,13 @@ router.delete('/:id', authRequired, async (req: Request, res: Response, next: Ne
   } catch (e) { next(e); }
 });
 
+router.delete('/', authRequired, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await prisma.bookmark.deleteMany({ where: { userId: req.user!.sub } });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 router.patch('/:id', authRequired, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const patchSchema = z.object({ folder: z.string().optional(), tags: z.array(z.string()).optional() });

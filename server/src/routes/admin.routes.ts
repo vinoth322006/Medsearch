@@ -8,7 +8,12 @@ import { logger } from '../utils/logger';
 const router = Router();
 router.use(authRequired, adminRequired);
 
-const setActiveSchema = z.object({ active: z.boolean() });
+const patchUserSchema = z.object({
+  active: z.boolean().optional(),
+  role: z.enum(['user', 'admin']).optional(),
+}).refine((d) => d.active !== undefined || d.role !== undefined, {
+  message: 'At least one of active or role must be provided',
+});
 
 // ---- User management ----
 // NOTE privacy default: admins see only basic account info (email, signup date,
@@ -28,17 +33,40 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
 
 router.patch('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const parsed = setActiveSchema.parse(req.body);
-    const body = { active: parsed.active };
+    const parsed = patchUserSchema.parse(req.body);
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) { res.status(404).json({ error: 'User not found' }); return; }
-    if (target.id === req.user!.sub && body.active === false) {
-      res.status(400).json({ error: 'You cannot deactivate your own admin account' });
+    if (target.id === req.user!.sub) {
+      if (parsed.active === false) {
+        res.status(400).json({ error: 'You cannot deactivate your own admin account' });
+        return;
+      }
+      if (parsed.role && parsed.role !== 'admin') {
+        res.status(400).json({ error: 'You cannot demote your own admin account' });
+        return;
+      }
+    }
+    const data: { active?: boolean; role?: 'user' | 'admin' } = {};
+    if (parsed.active !== undefined) data.active = parsed.active;
+    if (parsed.role !== undefined) data.role = parsed.role;
+    const updated = await prisma.user.update({ where: { id: req.params.id }, data });
+    logger.info({ admin: req.user!.sub, target: req.params.id, ...data }, 'admin updated user');
+    res.json({ user: { id: updated.id, active: updated.active, role: updated.role } });
+  } catch (e) { next(e); }
+});
+
+// ---- Delete user ----
+router.delete('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.params.id === req.user!.sub) {
+      res.status(400).json({ error: 'You cannot delete your own admin account' });
       return;
     }
-    const updated = await prisma.user.update({ where: { id: req.params.id }, data: { active: body.active } });
-    logger.info({ admin: req.user!.sub, target: req.params.id, active: body.active }, 'admin updated user active state');
-    res.json({ user: { id: updated.id, active: updated.active } });
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) { res.status(404).json({ error: 'User not found' }); return; }
+    await prisma.user.delete({ where: { id: req.params.id } });
+    logger.info({ admin: req.user!.sub, target: req.params.id, email: target.email }, 'admin deleted user');
+    res.json({ success: true });
   } catch (e) { next(e); }
 });
 
@@ -95,7 +123,7 @@ router.get('/analytics/overview', async (_req: Request, res: Response, next: Nex
       prisma.searchEvent.count(),
     ]);
 
-    const litSenseSuccessRate = totalLatencyCount > 0 ? (totalLatencyCount - degraded) / totalLatencyCount : 1;
+    const semanticEngineSuccessRate = totalLatencyCount > 0 ? (totalLatencyCount - degraded) / totalLatencyCount : 1;
     const cacheHitRate = totalLatencyCount > 0 ? cacheHits / totalLatencyCount : 0;
     const avgLatencyMs = totalLatencyCount > 0 ? Math.round((totalLatency._sum.latencyMs ?? 0) / totalLatencyCount) : 0;
 
@@ -126,7 +154,7 @@ router.get('/analytics/overview', async (_req: Request, res: Response, next: Nex
         activeUsers30d,
       },
       health: {
-        litSenseSuccessRate: Number(litSenseSuccessRate.toFixed(4)),
+        semanticEngineSuccessRate: Number(semanticEngineSuccessRate.toFixed(4)),
         cacheHitRate: Number(cacheHitRate.toFixed(4)),
         avgLatencyMs,
         degraded,

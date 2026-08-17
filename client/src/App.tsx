@@ -12,6 +12,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { Spinner } from './components/ui/Spinner';
 import { ReactNode } from 'react';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 function Protected({ children, role }: { children: ReactNode; role?: 'admin' }) {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/" element={<SearchPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/bookmarks" element={<Protected><BookmarksPage /></Protected>} />
           <Route path="/history" element={<Protected><HistoryPage /></Protected>} />
           <Route path="/profile" element={<Protected><ProfilePage /></Protected>} />

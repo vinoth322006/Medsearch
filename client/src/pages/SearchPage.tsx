@@ -82,7 +82,7 @@ function sortResults(results: SearchResultItem[], sortBy: string): SearchResultI
       });
     case 'bestMatch':
     default:
-      return copy; // already sorted by score from LitSense
+      return copy; // already sorted by score from SemanticEngine
   }
 }
 
@@ -179,7 +179,7 @@ export function SearchPage() {
   // Handle URL params for re-running searches, and reset when navigating home
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const q = params.get('q') ?? (location.state as { rerun?: string } | null)?.rerun;
+    const q = params.get('q');
     if (q) {
       setQuery(q);
       run(q);
@@ -191,7 +191,7 @@ export function SearchPage() {
       setError(null);
       setQuery('');
     }
-  }, [location.search, location.state, location.key, run]);
+  }, [location.search, run]);
 
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); if (query.trim().length >= 3) navigate(`/?q=${encodeURIComponent(query.trim())}`); };
 
@@ -375,7 +375,7 @@ export function SearchPage() {
 
         {/* Example queries */}
         <section className="pm-home__samples container">
-          <h2>Try a search</h2>
+          <h2>Example searches</h2>
           <div className="pm-home__chips">
             {SAMPLE_QUERIES.map((q) => (
               <button key={q} className="pm-home__chip" onClick={() => navigate(`/?q=${encodeURIComponent(q)}`)}>
@@ -390,6 +390,48 @@ export function SearchPage() {
               <Link to="/signup" className="btn btn--primary btn--sm">Sign up free</Link>
             </div>
           )}
+        </section>
+
+        {/* Four feature cards */}
+        <section className="pm-home__features container" aria-label="Features">
+          <div className="pm-home__feature-grid">
+            <button
+              id="feature-search"
+              className="pm-home__feature-card"
+              onClick={() => { inputRef.current?.focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            >
+              <span className="pm-home__feature-icon" aria-hidden="true">🔍</span>
+              <span className="pm-home__feature-title">Semantic Search</span>
+              <span className="pm-home__feature-desc">AI-powered search over 40M+ PubMed articles using natural language.</span>
+            </button>
+            <Link
+              id="feature-bookmarks"
+              to={user ? '/bookmarks' : '/signup'}
+              className="pm-home__feature-card"
+            >
+              <span className="pm-home__feature-icon" aria-hidden="true">🔖</span>
+              <span className="pm-home__feature-title">Bookmarks</span>
+              <span className="pm-home__feature-desc">Save and organize articles with folders and tags for future reference.</span>
+            </Link>
+            <Link
+              id="feature-history"
+              to={user ? '/history' : '/signup'}
+              className="pm-home__feature-card"
+            >
+              <span className="pm-home__feature-icon" aria-hidden="true">🕐</span>
+              <span className="pm-home__feature-title">Search History</span>
+              <span className="pm-home__feature-desc">Re-run past searches instantly and track your research over time.</span>
+            </Link>
+            <Link
+              id="feature-account"
+              to={user ? '/profile' : '/signup'}
+              className="pm-home__feature-card"
+            >
+              <span className="pm-home__feature-icon" aria-hidden="true">👤</span>
+              <span className="pm-home__feature-title">{user ? 'Your Profile' : 'Free Account'}</span>
+              <span className="pm-home__feature-desc">{user ? 'Manage your account settings and preferences.' : 'Sign up free to unlock bookmarks, history, and more.'}</span>
+            </Link>
+          </div>
         </section>
       </div>
     );
@@ -471,7 +513,7 @@ export function SearchPage() {
           {/* Loading */}
           {status === 'loading' && (
             <div className="pm-results-loading" role="status" aria-live="polite">
-              <p className="pm-results-loading__hint">Searching NCBI LitSense…</p>
+              <p className="pm-results-loading__hint">Searching the database…</p>
               {[0,1,2,3].map((i) => <SkeletonCard key={i} />)}
             </div>
           )}

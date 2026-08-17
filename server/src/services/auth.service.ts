@@ -21,7 +21,7 @@ export function clearRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_COOKIE, { path: '/api/auth', httpOnly: true, sameSite: 'strict', secure: config.isProd });
 }
 
-export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
+export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) throw httpError(409, 'Email already registered');
   if (password.length < 8) throw httpError(400, 'Password must be at least 8 characters');
@@ -30,19 +30,19 @@ export async function signup(email: string, password: string, name?: string, req
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({ data: { email: email.toLowerCase(), passwordHash, name } });
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  const out = { access, refresh, user: { id: user.id, email: user.email, role: user.role } };
+  const out = { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
   logger.info({ userId: user.id }, 'user signup');
   return out;
 }
 
-export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; role: string } }> {
+export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) throw httpError(401, 'Invalid credentials');
   if (!user.active) throw httpError(403, 'Account deactivated');
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw httpError(401, 'Invalid credentials');
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  return { access, refresh, user: { id: user.id, email: user.email, role: user.role } };
+  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
 }
 
 export async function logout(refreshToken: string | undefined): Promise<void> {
@@ -53,7 +53,7 @@ export async function logout(refreshToken: string | undefined): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revokedAt: new Date() } }).catch(() => undefined);
 }
 
-export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ access: string; refresh: string; sub: string; email: string; role: 'user' | 'admin' }> {
+export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ access: string; refresh: string; sub: string; email: string; name?: string | null; role: 'user' | 'admin' }> {
   const payload = verifyRefreshToken(oldToken);
   if (!payload) throw httpError(401, 'Invalid refresh token');
   const tokenHash = hashToken(oldToken);
@@ -72,7 +72,7 @@ export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ 
   if (revoked.count === 0) throw httpError(401, 'Refresh token invalid or expired');
 
   const issued = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  return { access: issued.access, refresh: issued.refresh, sub: user.id, email: user.email, role: user.role as 'user' | 'admin' };
+  return { access: issued.access, refresh: issued.refresh, sub: user.id, email: user.email, name: user.name, role: user.role as 'user' | 'admin' };
 }
 
 async function issueTokens(userId: string, email: string, role: 'user' | 'admin', req?: Request): Promise<{ access: string; refresh: string }> {
@@ -100,6 +100,65 @@ export async function deleteAccount(userId: string): Promise<void> {
   await prisma.user.delete({ where: { id: userId } });
 }
 
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  // Always return success (don't leak whether the email exists)
+  if (!user) return;
+
+  // Generate a secure random token
+  const crypto = await import('crypto');
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+  // Invalidate any existing unused reset tokens for this user
+  await prisma.passwordReset.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
+  await prisma.passwordReset.create({
+    data: {
+      userId: user.id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    },
+  });
+
+  // In production, wire up nodemailer / SES here.
+  // For development, log the reset link to the server console.
+  const resetUrl = `http://localhost:5173/reset-password?token=${rawToken}`;
+  logger.info({ userId: user.id, email: user.email, resetUrl }, '🔑 Password reset link generated');
+  console.log(`\n🔑 PASSWORD RESET LINK (dev only):\n   ${resetUrl}\n`);
+}
+
+export async function resetPassword(rawToken: string, newPassword: string): Promise<void> {
+  const crypto = await import('crypto');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+  const record = await prisma.passwordReset.findUnique({ where: { tokenHash } });
+  if (!record) throw httpError(400, 'Invalid or expired reset link');
+  if (record.usedAt) throw httpError(400, 'This reset link has already been used');
+  if (record.expiresAt < new Date()) throw httpError(400, 'This reset link has expired');
+
+  if (newPassword.length < 8 || !/[0-9]/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
+    throw httpError(400, 'Password must be at least 8 characters with letters and numbers');
+  }
+
+  // Mark token as used
+  await prisma.passwordReset.update({ where: { id: record.id }, data: { usedAt: new Date() } });
+
+  // Update password and revoke all refresh tokens
+  await prisma.user.update({
+    where: { id: record.userId },
+    data: { passwordHash: await hashPassword(newPassword) },
+  });
+  await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revokedAt: new Date() } });
+
+  logger.info({ userId: record.userId }, 'password reset completed');
+}
+
 export { issueTokens };
 
 function httpError(status: number, message: string): Error & { status: number } {
@@ -107,5 +166,3 @@ function httpError(status: number, message: string): Error & { status: number } 
   e.status = status;
   return e;
 }
-
-

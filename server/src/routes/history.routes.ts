@@ -23,4 +23,11 @@ router.delete('/', authRequired, async (req: Request, res: Response, next: NextF
   } catch (e) { next(e); }
 });
 
+router.delete('/:id', authRequired, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await prisma.searchHistory.deleteMany({ where: { id: req.params.id, userId: req.user!.sub } });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 export default router;

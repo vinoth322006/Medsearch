@@ -1,10 +1,10 @@
 import { prisma } from '../db/prisma';
-import { searchLitSense, LitSenseResult } from '../external/litsense';
+import { searchSemanticEngine, SemanticEngineResult } from '../external/semanticEngine';
 import { fetchArticleMeta, ArticleMeta } from '../external/eutils';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 
-export interface SearchResultItem extends LitSenseResult {
+export interface SearchResultItem extends SemanticEngineResult {
   meta?: ArticleMeta | null;
 }
 
@@ -24,7 +24,7 @@ export async function runSearch(opts: {
   ip: string | null;
 }): Promise<SearchOutcome> {
   const { query, rerank, userId, ip } = opts;
-  const ls = await searchLitSense(query, rerank);
+  const ls = await searchSemanticEngine(query, rerank);
 
   // Enrich with article metadata (only for results that have PMIDs)
   const pmids = ls.results.map((r) => r.pmid).filter((p): p is number => p !== null);
@@ -49,9 +49,21 @@ export async function runSearch(opts: {
   // Record history (logged-in users only) + aggregate analytics (everyone).
   if (userId) {
     try {
-      await prisma.searchHistory.create({
-        data: { userId, query, resultCount: enriched.length, source: ls.source },
+      // Deduplicate: if same query already in history, update timestamp + count
+      const normalizedQuery = query.trim();
+      const existing = await prisma.searchHistory.findFirst({
+        where: { userId, query: normalizedQuery },
       });
+      if (existing) {
+        await prisma.searchHistory.update({
+          where: { id: existing.id },
+          data: { resultCount: enriched.length, source: ls.source, createdAt: new Date() },
+        });
+      } else {
+        await prisma.searchHistory.create({
+          data: { userId, query: normalizedQuery, resultCount: enriched.length, source: ls.source },
+        });
+      }
     } catch (err) {
       logger.warn({ err }, 'failed recording search history');
     }

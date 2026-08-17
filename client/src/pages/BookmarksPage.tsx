@@ -17,6 +17,8 @@ export function BookmarksPage() {
   const [toDelete, setToDelete] = useState<Bookmark | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filter, setFilter] = useState('');
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const folders = useMemo(() => {
     const f = new Set<string>();
     (bookmarks ?? []).forEach((b) => { if (b.folder) f.add(b.folder); });
@@ -42,6 +44,13 @@ export function BookmarksPage() {
     finally { setDeleting(false); }
   }
 
+  async function doClear() {
+    setClearing(true);
+    try { await api.bookmarks.clear(); setBookmarks([]); notify('All bookmarks cleared.', 'success'); setConfirmClear(false); }
+    catch { notify('Could not clear bookmarks.', 'error'); }
+    finally { setClearing(false); }
+  }
+
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) return bookmarks ?? [];
@@ -55,7 +64,12 @@ export function BookmarksPage() {
           <h1>Bookmarks</h1>
           <p className="hint">{bookmarks?.length ?? 0} saved results {folders.length > 0 && <>· {folders.length} folder{folders.length > 1 ? 's' : ''}</>}</p>
         </div>
-        <input className="filter-input inline-filter" placeholder="Filter bookmarks..." value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter bookmarks" />
+        <div className="row" style={{ gap: 'var(--s-3)' }}>
+          <input className="filter-input inline-filter" placeholder="Filter bookmarks..." value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter bookmarks" />
+          {(bookmarks?.length ?? 0) > 0 && (
+            <button className="btn btn--ghost btn--sm" onClick={() => setConfirmClear(true)}><Trash2 size={16} />Clear all</button>
+          )}
+        </div>
       </div>
 
       {loading && <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--s-8)' }}><Spinner size={26} /></div>}
@@ -100,6 +114,11 @@ export function BookmarksPage() {
         open={!!toDelete} destructive title="Delete bookmark?" loading={deleting}
         description={<>This will permanently remove this saved result from your bookmarks. This cannot be undone.</>}
         confirmLabel="Delete" onConfirm={confirmDelete} onCancel={() => setToDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmClear} destructive title="Clear all bookmarks?" loading={clearing}
+        description={<>This will permanently delete all your saved bookmarks. This cannot be undone.</>}
+        confirmLabel="Clear all" onConfirm={doClear} onCancel={() => setConfirmClear(false)}
       />
     </div>
   );

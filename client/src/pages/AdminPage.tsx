@@ -4,7 +4,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
 import { Badge } from '../components/ui/Badge';
 import { useToast } from '../context/ToastContext';
-import { Users, Activity, HeartPulse, TrendingUp, Database, AlertTriangle, ShieldOff, Lock } from 'lucide-react';
+import { Users, Activity, HeartPulse, TrendingUp, Database, ShieldOff, Lock, Trash2, UserCog } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from 'recharts';
 
 export function AdminPage() {
@@ -16,6 +16,10 @@ export function AdminPage() {
   const [topTerms, setTopTerms] = useState<{ term: string; count: number }[]>([]);
   const [termView, setTermView] = useState<'aggregate' | 'none'>('aggregate');
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Obtain current admin's own id from the users list after load
+  const [selfId, setSelfId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,6 +30,8 @@ export function AdminPage() {
         if (cancelled) return;
         setAnalytics(an); setUsers(us.users); setTopTerms(tt.topTerms);
         setTermView(tt.attributed ? 'aggregate' : 'aggregate');
+        // Identify the current admin from the session
+        try { const me = await api.auth.me(); if (!cancelled) setSelfId(me.user.id); } catch { /* ignore */ }
       } catch { if (!cancelled) setError('Could not load admin data.'); }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -40,6 +46,28 @@ export function AdminPage() {
       notify(`${u.email} ${u.active ? 'deactivated' : 'reactivated'}.`, 'success');
     } catch { notify('Could not update user.', 'error'); }
     finally { setTogglingId(null); }
+  }
+
+  async function changeRole(u: AdminUser, newRole: 'user' | 'admin') {
+    if (newRole === u.role) return;
+    setChangingRoleId(u.id);
+    try {
+      await api.admin.setUserRole(u.id, newRole);
+      setUsers((prev) => (prev ?? []).map((x) => x.id === u.id ? { ...x, role: newRole } : x));
+      notify(`${u.email} is now ${newRole === 'admin' ? 'an admin' : 'a regular user'}.`, 'success');
+    } catch { notify('Could not change role.', 'error'); }
+    finally { setChangingRoleId(null); }
+  }
+
+  async function deleteUser(u: AdminUser) {
+    if (!window.confirm(`Permanently delete ${u.email}? This cannot be undone.`)) return;
+    setDeletingId(u.id);
+    try {
+      await api.admin.deleteUser(u.id);
+      setUsers((prev) => (prev ?? []).filter((x) => x.id !== u.id));
+      notify(`${u.email} has been deleted.`, 'success');
+    } catch { notify('Could not delete user.', 'error'); }
+    finally { setDeletingId(null); }
   }
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--s-12)' }}><Spinner size={28} /></div>;
@@ -67,10 +95,9 @@ export function AdminPage() {
       <div className="kpi-grid">
         <KPI label="Total searches" value={analytics.totals.totalSearches.toLocaleString()} icon={<Activity size={18} />} sub={`${analytics.totals.searches1d.toLocaleString()} today · ${analytics.totals.searches7d.toLocaleString()} this week`} />
         <KPI label="Users" value={analytics.totals.totalUsers.toLocaleString()} icon={<Users size={18} />} sub={`${analytics.totals.activeUsers7d} active 7d · ${analytics.totals.activeUsers30d} active 30d`} />
-        <KPI label="LitSense success" value={healthPct(analytics.health.litSenseSuccessRate)} icon={<HeartPulse size={18} />} tone={analytics.health.litSenseSuccessRate > 0.95 ? 'good' : 'warn'} />
+        <KPI label="SemanticEngine success" value={healthPct(analytics.health.semanticEngineSuccessRate)} icon={<HeartPulse size={18} />} tone={analytics.health.semanticEngineSuccessRate > 0.95 ? 'good' : 'warn'} />
         <KPI label="Cache hit rate" value={healthPct(analytics.health.cacheHitRate)} icon={<Database size={18} />} sub={`${analytics.health.cacheHits} cache hits`} />
         <KPI label="Avg latency" value={`${analytics.health.avgLatencyMs}ms`} icon={<TrendingUp size={18} />} />
-        <KPI label="Degraded events" value={analytics.health.degraded.toLocaleString()} icon={<AlertTriangle size={18} />} tone={analytics.health.degraded > 0 ? 'warn' : 'good'} />
       </div>
 
       {/* Trend */}
@@ -135,31 +162,57 @@ export function AdminPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Email</th><th scope="col">Name</th><th scope="col">Role</th>
+                <th scope="col">Email</th><th scope="col">Name</th>
+                <th scope="col">Role</th>
                 <th scope="col">Status</th><th scope="col">Searches</th><th scope="col">Bookmarks</th>
                 <th scope="col">Last active</th><th scope="col">Created</th><th scope="col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td><strong>{u.email}</strong></td>
-                  <td>{u.name || <span className="subtle">—</span>}</td>
-                  <td>{u.role === 'admin' ? <Badge variant="brand">admin</Badge> : <Badge variant="neutral">user</Badge>}</td>
-                  <td>{u.active ? <Badge variant="success">active</Badge> : <Badge variant="danger">inactive</Badge>}</td>
-                  <td>{u._count.searches}</td>
-                  <td>{u._count.bookmarks}</td>
-                  <td>{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString() : <span className="subtle">—</span>}</td>
-                  <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button className="btn btn--ghost btn--sm" disabled={togglingId === u.id}
-                      onClick={() => toggleActive(u)} aria-pressed={u.active}
-                      aria-label={u.active ? `Deactivate ${u.email}` : `Reactivate ${u.email}`}>
-                      {u.active ? 'Deactivate' : 'Reactivate'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((u) => {
+                const isSelf = u.id === selfId;
+                return (
+                  <tr key={u.id}>
+                    <td><strong>{u.email}</strong></td>
+                    <td>{u.name || <span className="subtle">—</span>}</td>
+                    <td>
+                      <select
+                        id={`role-select-${u.id}`}
+                        className="role-select"
+                        value={u.role}
+                        disabled={isSelf || changingRoleId === u.id}
+                        aria-label={`Change role for ${u.email}`}
+                        onChange={(e) => changeRole(u, e.target.value as 'user' | 'admin')}
+                      >
+                        <option value="user">user</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    </td>
+                    <td>{u.active ? <Badge variant="success">active</Badge> : <Badge variant="danger">inactive</Badge>}</td>
+                    <td>{u._count.searches}</td>
+                    <td>{u._count.bookmarks}</td>
+                    <td>{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString() : <span className="subtle">—</span>}</td>
+                    <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td style={{ display: 'flex', gap: 'var(--s-1)', alignItems: 'center' }}>
+                      <button className="btn btn--ghost btn--sm" disabled={togglingId === u.id || isSelf}
+                        onClick={() => toggleActive(u)} aria-pressed={u.active}
+                        aria-label={u.active ? `Deactivate ${u.email}` : `Reactivate ${u.email}`}>
+                        {u.active ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                      <button
+                        id={`delete-user-${u.id}`}
+                        className="btn btn--ghost btn--sm btn--danger"
+                        disabled={deletingId === u.id || isSelf}
+                        onClick={() => deleteUser(u)}
+                        aria-label={`Delete ${u.email}`}
+                        title={isSelf ? 'Cannot delete your own account' : `Delete ${u.email}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

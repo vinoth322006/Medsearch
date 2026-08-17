@@ -59,7 +59,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
     return () => window.removeEventListener('mousedown', handler);
   }, [userMenu]);
 
-  const initials = user?.email ? user.email[0].toUpperCase() : '?';
+  const initials = user?.name ? user.name[0].toUpperCase() : (user?.email ? user.email[0].toUpperCase() : '?');
 
   function handleHeaderSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -101,7 +101,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
               <div ref={userMenuRef} style={{ position: 'relative' }}>
                 <button className="pm-header__user-btn" aria-haspopup="menu" aria-expanded={userMenu} onClick={() => setUserMenu((v) => !v)}>
                   <span className="pm-header__avatar">{initials}</span>
-                  <span className="pm-header__user-name">{user.email.split('@')[0]}</span>
+                  <span className="pm-header__user-name">{user.name || user.email.split('@')[0]}</span>
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
                 {userMenu && (

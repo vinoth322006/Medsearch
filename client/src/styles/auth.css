@@ -10,12 +10,27 @@
 .auth-divider { display: flex; align-items: center; gap: var(--s-3); margin: var(--s-5) 0; color: var(--text-subtle); font-size: var(--fs-12); text-transform: uppercase; letter-spacing: 0.05em; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; background: var(--border); flex: 1; }
 
-.pw-wrap { position: relative; }
-.pw-toggle { position: absolute; right: var(--s-2); top: calc(38px + 1px); width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-subtle); border-radius: var(--r-sm); transition: background var(--t-1), color var(--t-1); }
+.pw-wrap { position: relative; margin-bottom: var(--s-4); }
+/* The Field component adds margin-bottom via .field; pw-wrap overrides so toggle stays inside */
+.pw-wrap .field { margin-bottom: 0; }
+.pw-toggle {
+  position: absolute;
+  /* Label (~20px) + gap (8px) = input starts at top 28px of .pw-wrap */
+  top: 28px;
+  right: var(--s-2);
+  height: 44px;
+  width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-subtle);
+  border-radius: var(--r-sm);
+  transition: background var(--t-1), color var(--t-1);
+}
 .pw-toggle:hover { background: var(--surface-2); color: var(--text); }
+/* Ensure typed text clears the eye-icon button */
+.pw-wrap .field__input { padding-right: calc(36px + var(--s-2) + var(--s-1)); }
 
-.auth-demo { margin-top: var(--s-4); padding: var(--s-3); background: var(--surface-2); border: 1px dashed var(--border-mid); border-radius: var(--r-md); font-size: var(--fs-13); color: var(--text-muted); text-align: center; }
-.auth-demo code { background: var(--surface-3); padding: 1px 6px; border-radius: var(--r-xs); font-size: var(--fs-12); color: var(--text); }
 
 .pw-strength { margin-top: var(--s-2); }
 .pw-bars { display: flex; gap: 4px; height: 4px; margin-bottom: var(--s-1); }

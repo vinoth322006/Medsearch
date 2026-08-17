@@ -11,7 +11,7 @@ Before we start, it's important to understand *what* we are deploying. We are us
 **The Stack (3 Docker Containers):**
 1. **Express Server (App):** A single Node.js container that serves *both* the backend API and the static React frontend files.
 2. **PostgreSQL:** The primary database for users, bookmarks, and search history.
-3. **Redis:** An in-memory cache used for rate limiting and caching LitSense/NCBI API responses.
+3. **Redis:** An in-memory cache used for rate limiting and caching SemanticEngine/NCBI API responses.
 
 **The Proxy:**
 *   **Caddy:** Runs directly on the EC2 host. It listens on ports 80 (HTTP) and 443 (HTTPS), automatically secures your site with Let's Encrypt SSL certificates, and forwards traffic to the Express container.
@@ -117,11 +117,9 @@ Open your web browser and go to:
 You should see the MedSearch application running perfectly!
 
 ### Logging in as Admin
-The deployment script automatically created an admin account.
-*   **Email:** `admin@medsearch.local`
-*   **Password:** `AdminPass!2024`
+The deployment script automatically created an admin account using the credentials configured in your `server/.env.prod` file (look for `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`).
 
-> **IMPORTANT:** Log in immediately, go to the Profile page, and **change the admin password**.
+> **IMPORTANT:** Log in immediately, go to the Profile page, and **change the admin password** to a strong, unique value before doing anything else.
 
 ---
 

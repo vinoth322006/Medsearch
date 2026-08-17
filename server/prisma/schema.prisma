@@ -28,6 +28,7 @@ model User {
   refreshTokens RefreshToken[]
   bookmarks     Bookmark[]
   searches      SearchHistory[]
+  passwordResets PasswordReset[]
 
   @@index([email])
 }
@@ -110,4 +111,17 @@ model ArticleMeta {
   fetchedAt   DateTime @default(now())
 
   @@index([pmcid])
+}
+
+model PasswordReset {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

@@ -58,21 +58,27 @@ export const api = {
     changePassword: (b: { currentPassword: string; newPassword: string }) => api.post('/api/auth/password', b),
     updateProfile: (b: { name?: string | null }) => api.patch('/api/auth/profile', b),
     deleteAccount: () => api.del('/api/auth/account'),
+    forgotPassword: (email: string) => api.post<{ ok: boolean }>('/api/auth/forgot-password', { email }),
+    resetPassword: (token: string, password: string) => api.post<{ ok: boolean }>('/api/auth/reset-password', { token, password }),
   },
   search: (b: { query: string; rerank?: boolean }) => api.post<SearchResponse>('/api/search', b),
   bookmarks: {
     list: () => api.get<{ bookmarks: Bookmark[] }>('/api/bookmarks'),
     create: (b: BookmarkInput) => api.post<{ bookmark: Bookmark }>('/api/bookmarks', b),
     remove: (id: string) => api.del(`/api/bookmarks/${id}`),
+    clear: () => api.del('/api/bookmarks'),
     update: (id: string, b: { folder?: string; tags?: string[] }) => api.patch<{ bookmark: Bookmark }>(`/api/bookmarks/${id}`, b),
   },
   history: {
     list: (limit?: number) => api.get<{ history: SearchHistoryItem[] }>(`/api/history?limit=${limit ?? 200}`),
     clear: () => api.del('/api/history'),
+    remove: (id: string) => api.del(`/api/history/${id}`),
   },
   admin: {
     users: () => api.get<{ users: AdminUser[] }>('/api/admin/users'),
     setUserActive: (id: string, active: boolean) => api.patch(`/api/admin/users/${id}`, { active }),
+    setUserRole: (id: string, role: 'user' | 'admin') => api.patch<{ user: Pick<AdminUser, 'id' | 'role'> }>(`/api/admin/users/${id}`, { role }),
+    deleteUser: (id: string) => api.del<{ success: boolean }>(`/api/admin/users/${id}`),
     userActivity: (id: string) => api.get<{ summary: { searchCount: number; bookmarkCount: number; lastSearchAt: string | null }; rawQueriesVisible: boolean; recentQueries: { query: string; createdAt: string }[] }>(`/api/admin/users/${id}/activity`),
     analytics: () => api.get<AnalyticsOverview>('/api/admin/analytics/overview'),
     topTerms: (limit?: number) => api.get<{ topTerms: { term: string; count: number }[]; source: string; attributed: boolean }>(`/api/admin/analytics/top-terms?limit=${limit ?? 50}`),
@@ -89,6 +95,6 @@ export interface SearchHistoryItem { id: string; query: string; resultCount: num
 export interface AdminUser { id: string; email: string; name?: string | null; role: 'user' | 'admin'; active: boolean; createdAt: string; lastActiveAt: string | null; _count: { bookmarks: number; searches: number } }
 export interface AnalyticsOverview {
   totals: { totalSearches: number; searches7d: number; searches1d: number; anonSearches: number; authedSearches: number; totalUsers: number; activeUsers7d: number; activeUsers30d: number }
-  health: { litSenseSuccessRate: number; cacheHitRate: number; avgLatencyMs: number; degraded: number; cacheHits: number }
+  health: { semanticEngineSuccessRate: number; cacheHitRate: number; avgLatencyMs: number; degraded: number; cacheHits: number }
   dailyTrend: { day: string; count: number }[]
 }

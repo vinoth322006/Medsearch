@@ -48,7 +48,7 @@ export function SignupPage() {
       <div className="auth-card">
         <Link to="/" className="app-header__brand" style={{ marginBottom: 'var(--s-5)' }}>
           <span className="app-header__logo" aria-hidden="true">M</span>
-          <span>MedSearch</span>
+          <span>edSearch</span>
         </Link>
         <h1>Create your account</h1>
         <p className="hint">Bookmark results and keep a searchable history you can re-run anytime. Free for researchers.</p>
@@ -56,9 +56,16 @@ export function SignupPage() {
         <form onSubmit={onSubmit} noValidate>
           <Field id="su-email" label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@university.edu" />
           <Field id="su-name" label="Name (optional)" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dr. Jane Doe" />
-          <div className="pw-wrap">
+          <div className="pw-wrap" style={{ marginBottom: password ? 0 : 'var(--s-4)' }}>
             <Field id="su-password" label="Password" type={showPw ? 'text' : 'password'} autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" hint="Use 8+ characters with letters and numbers." />
-            <button type="button" className="pw-toggle" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw((v) => !v)}>{showPw ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+            <button
+              type="button"
+              className="pw-toggle"
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPw((v) => !v)}
+            >
+              {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
             {password && (
               <div className="pw-strength">
                 <div className="pw-bars">
