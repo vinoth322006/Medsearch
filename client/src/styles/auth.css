@@ -16,3 +16,12 @@
 
 .auth-demo { margin-top: var(--s-4); padding: var(--s-3); background: var(--surface-2); border: 1px dashed var(--border-mid); border-radius: var(--r-md); font-size: var(--fs-13); color: var(--text-muted); text-align: center; }
 .auth-demo code { background: var(--surface-3); padding: 1px 6px; border-radius: var(--r-xs); font-size: var(--fs-12); color: var(--text); }
+
+.pw-strength { margin-top: var(--s-2); }
+.pw-bars { display: flex; gap: 4px; height: 4px; margin-bottom: var(--s-1); }
+.pw-bar { flex: 1; background: var(--surface-3); border-radius: var(--r-xs); transition: background var(--t-2); }
+.pw-bar.active-1 { background: var(--danger); }
+.pw-bar.active-2 { background: var(--warning); }
+.pw-bar.active-3 { background: #66bb6a; }
+.pw-bar.active-4 { background: var(--success); }
+.pw-label { font-size: var(--fs-12); color: var(--text-muted); display: flex; justify-content: flex-end; font-weight: 500; }
