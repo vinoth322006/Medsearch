@@ -57,12 +57,15 @@ export const api = {
     logout: () => api.post('/api/auth/logout'),
     me: () => api.get<{ user: User }>('/api/auth/me'),
     changePassword: (b: { currentPassword: string; newPassword: string }) => api.post('/api/auth/password', b),
-    updateProfile: (b: { name?: string | null }) => api.patch('/api/auth/profile', b),
+    updateProfile: (b: { name?: string | null; geminiApiKey?: string | null; geminiModel?: string | null }) => api.patch('/api/auth/profile', b),
     deleteAccount: () => api.del('/api/auth/account'),
     forgotPassword: (email: string) => api.post<{ ok: boolean }>('/api/auth/forgot-password', { email }),
     resetPassword: (token: string, password: string) => api.post<{ ok: boolean }>('/api/auth/reset-password', { token, password }),
   },
   search: (b: { query: string; rerank?: boolean }) => api.post<SearchResponse>('/api/search', b),
+  enhance: {
+    query: (b: { query: string }) => api.post<{ enhancedQuery: string }>('/api/enhance', b),
+  },
   bookmarks: {
     list: () => api.get<{ bookmarks: Bookmark[] }>('/api/bookmarks'),
     create: (b: BookmarkInput) => api.post<{ bookmark: Bookmark }>('/api/bookmarks', b),
@@ -86,7 +89,7 @@ export const api = {
   },
 };
 
-export interface User { id: string; email: string; name?: string | null; role: 'user' | 'admin'; createdAt?: string }
+export interface User { id: string; email: string; name?: string | null; role: 'user' | 'admin'; createdAt?: string; geminiApiKey?: string | null; geminiModel?: string | null; }
 export interface ArticleMeta { pmid: number; pmcid: string | null; title: string | null; authors: string[]; journal: string | null; pubDate: string | null; pubType: string[]; lang: string }
 export interface SearchResultItem { text: string; score: number; pmid: number | null; pmcid: string | null; section: string; meta?: ArticleMeta | null }
 export interface SearchResponse { results: SearchResultItem[]; source: 'live' | 'cache' | 'degraded'; degradedMessage?: string; cacheHit: boolean; latencyMs: number; resultCount: number }

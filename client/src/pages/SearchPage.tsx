@@ -12,7 +12,6 @@ import { useFilters } from '../hooks/useFilters';
 import { PER_PAGE_OPTIONS, type PerPage } from '../components/search/filterConfig';
 import { applyFilters, labelFor, FILTER_GROUP_LABELS, calculateFilterCounts } from '../components/search/applyFilters';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PubMedLogo } from '../components/layout/AppHeader';
 
 
 function SkeletonCard() {
@@ -136,6 +135,28 @@ export function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(Boolean(initialQ));
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
+  async function handleEnhance() {
+    if (!user) {
+      notify('You must be logged in to enhance queries.', 'info');
+      return;
+    }
+    if (!query.trim()) {
+      notify('Please enter a query to enhance.', 'info');
+      return;
+    }
+    setIsEnhancing(true);
+    try {
+      const res = await api.enhance.query({ query });
+      setQuery(res.enhancedQuery);
+      notify('Query enhanced successfully!', 'success');
+    } catch (e: any) {
+      notify(e.message || 'Failed to enhance query. Check your Gemini API key in profile.', 'error');
+    } finally {
+      setIsEnhancing(false);
+    }
+  }
 
   // Pagination
   const [page, setPage] = useState(initialPage);
@@ -404,23 +425,31 @@ export function SearchPage() {
             <form className="pm-hero__form" role="search" onSubmit={onSubmit}>
               <div className="pm-hero__search-box">
                 <SearchIcon size={20} className="pm-hero__search-icon" />
-                <input
-                  ref={inputRef}
-                  id="search-query"
-                  type="text"
-                  className="pm-hero__input"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search PubMed — try natural language queries"
-                  autoComplete="off"
-                  aria-label="Search query"
-                />
-                {query && (
-                  <button type="button" className="pm-hero__clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }} aria-label="Clear">
-                    <X size={18} />
+                <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                  <input
+                    ref={inputRef}
+                    id="search-query"
+                    type="text"
+                    className="pm-hero__input"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search PubMed — try natural language queries"
+                    autoComplete="off"
+                    aria-label="Search query"
+                    style={{ width: '100%' }}
+                  />
+                  {query && (
+                    <button type="button" className="pm-hero__clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }} aria-label="Clear" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)' }}>
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+                <button type="submit" className="pm-hero__search-btn" style={{ marginLeft: '8px' }}>Search</button>
+                {user && (
+                  <button type="button" className="pm-hero__search-btn" onClick={handleEnhance} disabled={isEnhancing} style={{ background: '#0EA5E9', marginLeft: '8px', minWidth: '130px', borderRadius: 'calc(var(--r-xl) - 4px)' }}>
+                    {isEnhancing ? '✨...' : '✨ Enhance'}
                   </button>
                 )}
-                <button type="submit" className="pm-hero__search-btn">Search</button>
               </div>
             </form>
 

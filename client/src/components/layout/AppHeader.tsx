@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../api';
+import { useToast } from '../../context/ToastContext';
 import { Bookmark, History, User as UserIcon, ShieldCheck, LogIn, Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { cx } from '../../lib/utils';
 
@@ -57,6 +59,8 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
   const [userMenu, setUserMenu] = useState(false);
   const [headerQuery, setHeaderQuery] = useState(searchQuery);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const { notify } = useToast();
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   useEffect(() => { setMenuOpen(false); setUserMenu(false); }, [loc.pathname]);
   useEffect(() => { setHeaderQuery(searchQuery); }, [searchQuery]);
@@ -69,6 +73,27 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
   }, [userMenu]);
 
   const initials = user?.name ? user.name[0].toUpperCase() : (user?.email ? user.email[0].toUpperCase() : '?');
+
+  async function handleEnhance() {
+    if (!user) {
+      notify('You must be logged in to enhance queries.', 'info');
+      return;
+    }
+    if (!headerQuery.trim()) {
+      notify('Please enter a query to enhance.', 'info');
+      return;
+    }
+    setIsEnhancing(true);
+    try {
+      const res = await api.enhance.query({ query: headerQuery });
+      setHeaderQuery(res.enhancedQuery);
+      notify('Query enhanced successfully!', 'success');
+    } catch (e: any) {
+      notify(e.message || 'Failed to enhance query. Check your Gemini API key in profile.', 'error');
+    } finally {
+      setIsEnhancing(false);
+    }
+  }
 
   function handleHeaderSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -159,24 +184,29 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
               </div>
             </div>
             <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch} style={{ maxWidth: '800px', flex: '1' }}>
-              <input
-                type="text"
-                className="pm-header__search-input"
-                value={headerQuery}
-                onChange={(e) => setHeaderQuery(e.target.value)}
-                placeholder="Search PubMed"
-                aria-label="Search"
-              />
-              {headerQuery && (
-                <button type="button" className="pm-header__search-clear" onClick={() => setHeaderQuery('')} aria-label="Clear search">
-                  <X size={18} />
+              <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                <input
+                  type="text"
+                  className="pm-header__search-input"
+                  value={headerQuery}
+                  onChange={(e) => setHeaderQuery(e.target.value)}
+                  placeholder="Search PubMed"
+                  aria-label="Search"
+                  style={{ width: '100%', borderRadius: 'var(--r-sm)', borderRight: '2px solid var(--pm-navy)' }}
+                />
+                {headerQuery && (
+                  <button type="button" className="pm-header__search-clear" onClick={() => setHeaderQuery('')} aria-label="Clear search" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)' }}>
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+              <button type="submit" className="pm-header__search-btn" style={{ marginLeft: '8px', borderRadius: 'var(--r-sm)' }}>Search</button>
+              {user && (
+                <button type="button" className="pm-header__search-btn" onClick={handleEnhance} disabled={isEnhancing} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', marginLeft: '8px', borderRadius: 'var(--r-sm)' }}>
+                  {isEnhancing ? '✨...' : '✨ Enhance'}
                 </button>
               )}
-              <button type="submit" className="pm-header__search-btn">Search</button>
             </form>
-            <div style={{ paddingLeft: '16px' }}>
-              <span style={{ color: '#2563EB', fontWeight: 600, fontSize: '14px', cursor: 'pointer', textDecoration: 'none' }}>Advanced Search</span>
-            </div>
           </div>
         </div>
       )}

@@ -22,7 +22,17 @@ export function ProfilePage() {
 
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { if (user) setName(user.name ?? ''); }, [user]);
+  const [geminiApiKey, setGeminiApiKey] = useState(user?.geminiApiKey ?? '');
+  const [geminiModel, setGeminiModel] = useState(user?.geminiModel ?? 'gemini-1.5-pro');
+  const [savingGemini, setSavingGemini] = useState(false);
+
+  useEffect(() => { 
+    if (user) {
+      setName(user.name ?? ''); 
+      setGeminiApiKey(user.geminiApiKey ?? '');
+      setGeminiModel(user.geminiModel ?? 'gemini-1.5-pro');
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -32,6 +42,18 @@ export function ProfilePage() {
     catch { notify('Could not update profile.', 'error'); }
     finally { setSavingName(false); }
   }
+
+  async function saveGemini() {
+    setSavingGemini(true);
+    try { 
+      await api.auth.updateProfile({ geminiApiKey, geminiModel }); 
+      await refreshUser(); 
+      notify('Gemini configuration updated.', 'success'); 
+    }
+    catch { notify('Could not update Gemini configuration.', 'error'); }
+    finally { setSavingGemini(false); }
+  }
+
   async function changePw(e: React.FormEvent) {
     e.preventDefault(); setPwErr(null); setSavingPw(true);
     try { await api.auth.changePassword({ currentPassword: cur, newPassword: np }); setCur(''); setNp(''); notify('Password changed. Please sign in again.', 'success'); await logout(); navigate('/login'); }
@@ -64,6 +86,20 @@ export function ProfilePage() {
 
         <Field id="display-name" label="Display name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
         <Button variant="primary" onClick={saveName} loading={savingName}>Save name</Button>
+      </section>
+
+      <section className="profile-card">
+        <div className="row" style={{ gap: 'var(--s-2)', marginBottom: 'var(--s-3)' }}>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-18)' }}>✨ Gemini Configuration</h2>
+        </div>
+        <p className="hint" style={{ marginBottom: '1rem' }}>
+          Configure your Gemini API key to enable AI-powered query enhancement. 
+          To get your free API key, visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
+        </p>
+        
+        <Field id="gemini-key" label="Gemini API Key" type="password" value={geminiApiKey} onChange={(e) => setGeminiApiKey(e.target.value)} placeholder="AIzaSy..." />
+        
+        <Button variant="primary" onClick={saveGemini} loading={savingGemini}>Save configuration</Button>
       </section>
 
       <section className="profile-card">

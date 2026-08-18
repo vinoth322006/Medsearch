@@ -11,7 +11,7 @@ const REFRESH_COOKIE = 'ms_rt';
 const signupSchema = z.object({ email: z.string().email(), password: z.string().min(8), name: z.string().optional() });
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const changePwSchema = z.object({ currentPassword: z.string(), newPassword: z.string().min(8) });
-const profileSchema = z.object({ name: z.string().nullable().optional() });
+const profileSchema = z.object({ name: z.string().nullable().optional(), geminiApiKey: z.string().nullable().optional(), geminiModel: z.string().nullable().optional() });
 const forgotPwSchema = z.object({ email: z.string().email() });
 const resetPwSchema = z.object({ token: z.string().min(1), password: z.string().min(8) });
 
@@ -75,7 +75,7 @@ router.post('/refresh', async (req, res, next) => {
 
 router.get('/me', authRequired, async (req, res, next) => {
   try {
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.sub }, select: { id: true, email: true, name: true, role: true, createdAt: true } });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.sub }, select: { id: true, email: true, name: true, role: true, createdAt: true, geminiApiKey: true, geminiModel: true } });
     res.json({ user });
   } catch (e) { next(e); }
 });
@@ -91,7 +91,7 @@ router.post('/password', authRequired, async (req, res, next) => {
 router.patch('/profile', authRequired, async (req, res, next) => {
   try {
     const parsed = profileSchema.parse(req.body);
-    await updateProfile(req.user!.sub, parsed.name);
+    await updateProfile(req.user!.sub, parsed.name, parsed.geminiApiKey, parsed.geminiModel);
     res.json({ ok: true });
   } catch (e) { next(e); }
 });

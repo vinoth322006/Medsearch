@@ -31,7 +31,7 @@ export async function signup(email: string, password: string, name?: string, req
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({ data: { email: email.toLowerCase(), passwordHash, name } });
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  const out = { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+  const out = { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, geminiApiKey: user.geminiApiKey, geminiModel: user.geminiModel } };
   logger.info({ userId: user.id }, 'user signup');
   return out;
 }
@@ -82,7 +82,7 @@ export async function firebaseLogin(idToken: string, req?: Request): Promise<{ a
   }
 
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl } };
+  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl, geminiApiKey: user.geminiApiKey, geminiModel: user.geminiModel } };
 }
 
 export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
@@ -98,7 +98,7 @@ export async function login(email: string, password: string, req?: Request): Pro
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw httpError(401, 'Invalid credentials');
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, geminiApiKey: user.geminiApiKey, geminiModel: user.geminiModel } };
 }
 
 export async function logout(refreshToken: string | undefined): Promise<void> {
@@ -128,7 +128,7 @@ export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ 
   if (revoked.count === 0) throw httpError(401, 'Refresh token invalid or expired');
 
   const issued = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
-  return { access: issued.access, refresh: issued.refresh, sub: user.id, email: user.email, name: user.name, role: user.role as 'user' | 'admin' };
+  return { access: issued.access, refresh: issued.refresh, sub: user.id, email: user.email, name: user.name, role: user.role as 'user' | 'admin', geminiApiKey: user.geminiApiKey, geminiModel: user.geminiModel };
 }
 
 async function issueTokens(userId: string, email: string, role: 'user' | 'admin', req?: Request): Promise<{ access: string; refresh: string }> {
@@ -149,8 +149,12 @@ export async function changePassword(userId: string, current: string, next: stri
   await prisma.refreshToken.updateMany({ where: { userId }, data: { revokedAt: new Date() } });
 }
 
-export async function updateProfile(userId: string, name?: string | null): Promise<void> {
-  await prisma.user.update({ where: { id: userId }, data: name === undefined ? {} : { name } });
+export async function updateProfile(userId: string, name?: string | null, geminiApiKey?: string | null, geminiModel?: string | null): Promise<void> {
+  const data: any = {};
+  if (name !== undefined) data.name = name;
+  if (geminiApiKey !== undefined) data.geminiApiKey = geminiApiKey;
+  if (geminiModel !== undefined) data.geminiModel = geminiModel;
+  await prisma.user.update({ where: { id: userId }, data });
 }
 
 export async function deleteAccount(userId: string): Promise<void> {
