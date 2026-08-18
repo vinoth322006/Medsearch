@@ -229,9 +229,28 @@ export function SearchPage() {
       .sort((a, b) => a.year - b.year);
   }, [data?.results]);
 
+
+  const [existingBookmarks, setExistingBookmarks] = useState<Set<string>>(new Set());
+
+  // Fetch existing bookmarks on mount/login
+  useEffect(() => {
+    if (user) {
+      api.bookmarks.list().then(res => {
+        const set = new Set<string>();
+        res.bookmarks.forEach(b => set.add((b.pmid ?? 'null') + '|' + b.resultText));
+        setExistingBookmarks(set);
+      }).catch(() => {});
+    } else {
+      setExistingBookmarks(new Set());
+    }
+  }, [user]);
+
   const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
-  useEffect(() => { setJustSaved(new Set()); }, [data]);
-  const isBookmarked = useCallback((_pmid: number | null, text: string) => justSaved.has(_pmid + '|' + text), [justSaved]);
+  
+  const isBookmarked = useCallback((_pmid: number | null, text: string) => {
+    const key = (_pmid ?? 'null') + '|' + text;
+    return justSaved.has(key) || existingBookmarks.has(key);
+  }, [justSaved, existingBookmarks]);
 
   // Update parent justSaved Set when an individual card is bookmarked
   const handleSingleBookmark = useCallback((pmid: number | null, text: string) => {

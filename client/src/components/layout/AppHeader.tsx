@@ -69,6 +69,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
   }
 
   const navItems = [
+    { to: `/${sessionStorage.getItem('lastSearch') || ''}`, label: 'Search', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> },
     ...(user ? [{ to: '/bookmarks', label: 'Bookmarks', icon: <Bookmark size={15} aria-hidden="true" /> }] : []),
     ...(user ? [{ to: '/history', label: 'History', icon: <History size={15} aria-hidden="true" /> }] : []),
     ...(user?.role === 'admin' ? [{ to: '/admin', label: 'Admin', icon: <ShieldCheck size={15} aria-hidden="true" /> }] : []),

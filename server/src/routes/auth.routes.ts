@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/prisma';
-import { login, signup, logout, rotateRefresh, changePassword, updateProfile, deleteAccount, requestPasswordReset, resetPassword, setRefreshCookie, clearRefreshCookie } from '../services/auth.service';
+import { login, signup, logout, rotateRefresh, changePassword, updateProfile, deleteAccount, requestPasswordReset, resetPassword, setRefreshCookie, clearRefreshCookie, firebaseLogin } from '../services/auth.service';
 import { checkLoginLockout, logRateLimitHit } from '../middleware/rateLimit';
 import { authRequired } from '../middleware/auth';
 
@@ -22,6 +22,19 @@ router.post('/signup', async (req, res, next) => {
     setRefreshCookie(res, out.refresh);
     res.status(201).json({ accessToken: out.access, user: out.user });
   } catch (e) { next(e); }
+});
+
+const firebaseLoginSchema = z.object({ idToken: z.string().min(1) });
+
+router.post('/firebase', async (req, res, next) => {
+  try {
+    const parsed = firebaseLoginSchema.parse(req.body);
+    const out = await firebaseLogin(parsed.idToken, req);
+    setRefreshCookie(res, out.refresh);
+    res.json({ accessToken: out.access, user: out.user });
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.post('/login', async (req, res, next) => {

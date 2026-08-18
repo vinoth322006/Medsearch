@@ -70,6 +70,9 @@ export const config = {
     adminEmail: process.env.SEED_ADMIN_EMAIL ?? 'admin@medscholar.local',
     adminPassword: process.env.SEED_ADMIN_PASSWORD ?? 'AdminPass!2024',
   },
+  firebase: {
+    serviceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+  },
   adminCanViewUserQueries: (process.env.ADMIN_CAN_VIEW_USER_QUERIES ?? 'false') === 'true',
   logLevel: process.env.LOG_LEVEL ?? 'info',
 };

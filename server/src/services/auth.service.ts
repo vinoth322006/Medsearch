@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword } from '../utils/hash';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, hashToken } from '../utils/tokens';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import { firebaseAdminAuth } from '../config/firebase-admin';
 import type { Request, Response } from 'express';
 
 const REFRESH_COOKIE = 'ms_rt';
@@ -35,10 +36,65 @@ export async function signup(email: string, password: string, name?: string, req
   return out;
 }
 
+export async function firebaseLogin(idToken: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string; avatarUrl?: string | null } }> {
+  const decodedToken = await firebaseAdminAuth.verifyIdToken(idToken);
+  const email = decodedToken.email?.toLowerCase();
+  
+  if (!email) throw httpError(400, 'No email found in Firebase token');
+  
+  const firebaseUid = decodedToken.uid;
+  const name = decodedToken.name || null;
+  const avatarUrl = decodedToken.picture || null;
+  const emailVerified = decodedToken.email_verified || false;
+  
+  // Find existing user by email or create new
+  let user = await prisma.user.findUnique({ where: { email } });
+  
+  if (user) {
+    if (!user.active) throw httpError(403, 'Account deactivated');
+    
+    // If they logged in with Google but their account was created via email, link them
+    const updates: any = {};
+    if (user.authProvider === 'email') updates.authProvider = 'both';
+    if (!user.firebaseUid) updates.firebaseUid = firebaseUid;
+    if (!user.avatarUrl && avatarUrl) updates.avatarUrl = avatarUrl;
+    if (emailVerified && !user.emailVerified) updates.emailVerified = true;
+    if (!user.name && name) updates.name = name;
+    
+    if (Object.keys(updates).length > 0) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: updates
+      });
+    }
+  } else {
+    // New Google user
+    user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        authProvider: 'google',
+        firebaseUid,
+        avatarUrl,
+        emailVerified
+      }
+    });
+  }
+
+  const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
+  return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl } };
+}
+
 export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) throw httpError(401, 'Invalid credentials');
   if (!user.active) throw httpError(403, 'Account deactivated');
+  
+  if (!user.passwordHash) {
+    // This is a Google-only user who hasn't set a password
+    throw httpError(401, 'Please sign in with Google');
+  }
+
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw httpError(401, 'Invalid credentials');
   const { access, refresh } = await issueTokens(user.id, user.email, user.role as 'user' | 'admin', req);
@@ -86,6 +142,7 @@ async function issueTokens(userId: string, email: string, role: 'user' | 'admin'
 
 export async function changePassword(userId: string, current: string, next: string): Promise<void> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (!user.passwordHash) throw httpError(401, 'Please reset password through Google');
   if (!(await verifyPassword(current, user.passwordHash))) throw httpError(401, 'Current password incorrect');
   if (next.length < 8 || !/[0-9]/.test(next) || !/[a-zA-Z]/.test(next)) throw httpError(400, 'New password too weak');
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(next) } });

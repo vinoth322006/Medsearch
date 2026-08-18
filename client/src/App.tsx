@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { AppHeader, FocusOnRoute } from './components/layout/AppHeader';
 import { AppFooter } from './components/layout/AppFooter';
@@ -33,6 +33,15 @@ export default function App() {
 
   // Show compact header on all pages except homepage without a query
   const showCompact = !isHomepage || hasSearchQuery;
+
+  // Remember last search query in session storage
+  useEffect(() => {
+    if (isHomepage && hasSearchQuery) {
+      sessionStorage.setItem('lastSearch', location.search);
+    } else if (isHomepage && !hasSearchQuery) {
+      sessionStorage.removeItem('lastSearch');
+    }
+  }, [isHomepage, hasSearchQuery, location.search]);
 
   const handleHeaderSearch = useCallback((q: string) => {
     navigate(`/?q=${encodeURIComponent(q)}`);

@@ -53,6 +53,7 @@ export const api = {
   auth: {
     signup: (b: { email: string; password: string; name?: string }) => api.post<{ accessToken: string; user: User }>('/api/auth/signup', b),
     login: (b: { email: string; password: string }) => api.post<{ accessToken: string; user: User }>('/api/auth/login', b),
+    firebaseLogin: (b: { idToken: string }) => api.post<{ accessToken: string; user: User }>('/api/auth/firebase', b),
     logout: () => api.post('/api/auth/logout'),
     me: () => api.get<{ user: User }>('/api/auth/me'),
     changePassword: (b: { currentPassword: string; newPassword: string }) => api.post('/api/auth/password', b),

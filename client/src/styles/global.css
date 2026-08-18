@@ -172,6 +172,33 @@ hr { border: none; border-top: 1px solid var(--border); margin: var(--s-6) 0; }
   }
 }
 
+/* ============================================================
+   Custom Premium Scrollbars
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: var(--r-sm);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(32, 85, 138, 0.25);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(32, 85, 138, 0.5);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(32, 85, 138, 0.25) transparent;
+}
+
 /* App shell */
 .app-shell { display: flex; flex-direction: column; min-height: 100dvh; }
 .page:focus { outline: none; }

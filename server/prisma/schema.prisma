@@ -18,7 +18,11 @@ model User {
   id            String   @id @default(cuid())
   email         String   @unique
   name          String?
-  passwordHash  String
+  passwordHash  String?
+  authProvider  String   @default("email") // "email", "google", "both"
+  firebaseUid   String?  @unique
+  emailVerified Boolean  @default(false)
+  avatarUrl     String?
   role          Role     @default(user)
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())

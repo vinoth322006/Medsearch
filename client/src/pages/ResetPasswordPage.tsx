@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { auth } from '../lib/firebase';
+import { confirmPasswordReset } from 'firebase/auth';
 import { Field } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
@@ -9,7 +10,8 @@ import { Eye, EyeOff } from 'lucide-react';
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const token = params.get('token') ?? '';
+  // Firebase uses oobCode, old system used token
+  const token = params.get('oobCode') || params.get('token');
 
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -22,10 +24,10 @@ export function ResetPasswordPage() {
     if (!token) { setError('Invalid reset link — no token found.'); return; }
     setError(null); setLoading(true);
     try {
-      await api.auth.resetPassword(token, password);
+      await confirmPasswordReset(auth, token, password);
       setSuccess(true);
-    } catch (e) {
-      setError((e as { message?: string })?.message ?? 'Could not reset password.');
+    } catch (e: any) {
+      setError(e.message || 'Could not reset password. The link might be expired.');
     } finally {
       setLoading(false);
     }

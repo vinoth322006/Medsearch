@@ -108,3 +108,53 @@
 .pw-bar.active-3 { background: #66bb6a; }
 .pw-bar.active-4 { background: var(--pm-green); }
 .pw-label { font-size: var(--fs-12); color: var(--text-muted); display: flex; justify-content: flex-end; font-weight: 500; }
+
+/* Google Sign In Button */
+.btn--google {
+  background: white;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: var(--r-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.30), 0 1px 3px 1px rgba(60,64,67,0.15);
+  transition: background-color 250ms, box-shadow 250ms;
+}
+.btn--google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.30), 0 4px 8px 3px rgba(60,64,67,0.15);
+}
+.btn--google:disabled {
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+/* Verification Step */
+.verification-step {
+  animation: slideUpFade 0.4s ease-out forwards;
+}
+.verify-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  margin: var(--s-6) 0;
+  padding: var(--s-6);
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+}
+.verify-spinner-wrap p {
+  margin: 0;
+  color: var(--pm-navy);
+  font-weight: 500;
+}
+.spinner.spin {
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

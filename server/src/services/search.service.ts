@@ -26,8 +26,26 @@ export async function runSearch(opts: {
   const { query, rerank, userId, ip } = opts;
   const ls = await searchSemanticEngine(query, rerank);
 
+  // Deduplicate by PMID, keeping the one with the highest score
+  const uniqueResults = new Map<number, SemanticEngineResult>();
+  const nullPmidResults: SemanticEngineResult[] = [];
+
+  for (const r of ls.results) {
+    if (r.pmid === null) {
+      nullPmidResults.push(r);
+    } else {
+      const existing = uniqueResults.get(r.pmid);
+      if (!existing || r.score > existing.score) {
+        uniqueResults.set(r.pmid, r);
+      }
+    }
+  }
+
+  // Convert back to array and sort by score descending
+  const deduplicatedResults = [...uniqueResults.values(), ...nullPmidResults].sort((a, b) => b.score - a.score);
+
   // Enrich with article metadata (only for results that have PMIDs)
-  const pmids = ls.results.map((r) => r.pmid).filter((p): p is number => p !== null);
+  const pmids = deduplicatedResults.map((r) => r.pmid).filter((p): p is number => p !== null);
   let meta: Record<number, ArticleMeta> = {};
   if (pmids.length > 0) {
     try {
@@ -37,7 +55,7 @@ export async function runSearch(opts: {
     }
   }
 
-  const enriched: SearchResultItem[] = ls.results.map((r) => ({
+  const enriched: SearchResultItem[] = deduplicatedResults.map((r) => ({
     text: r.text,
     score: r.score,
     pmid: r.pmid,

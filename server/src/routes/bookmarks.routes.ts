@@ -33,6 +33,20 @@ router.get('/', authRequired, async (req: Request, res: Response, next: NextFunc
 router.post('/', authRequired, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = createSchema.parse(req.body);
+
+    // Prevent duplicates
+    const existing = await prisma.bookmark.findFirst({
+      where: {
+        userId: req.user!.sub,
+        pmid: parsed.pmid,
+        resultText: parsed.resultText,
+      }
+    });
+    if (existing) {
+      res.json({ bookmark: existing });
+      return;
+    }
+
     const created = await prisma.bookmark.create({
       data: {
         userId: req.user!.sub,
