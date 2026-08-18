@@ -4,35 +4,44 @@ import { useAuth } from '../../context/AuthContext';
 import { Bookmark, History, User as UserIcon, ShieldCheck, LogIn, Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { cx } from '../../lib/utils';
 
-/** PubMed-style SVG book logo mark */
+/** MedScholar Main Logo */
 function PubMedLogo({ className, white }: { className?: string; white?: boolean }) {
-  const fill = white ? '#fff' : '#20558a';
+  const primary = white ? '#ffffff' : '#2563EB'; // vibrant blue
+  const secondary = white ? 'rgba(255, 255, 255, 0.8)' : '#0EA5E9'; // sky blue
+  const textPrimary = white ? '#ffffff' : '#0F172A'; // dark slate
+  
   return (
-    <svg className={className} width="130" height="40" viewBox="0 0 280 80" fill="none" aria-hidden="true">
-      <text x="0" y="58" fontFamily="Source Sans 3, Source Sans Pro, Arial, sans-serif" fontSize="56" fontWeight="700" fill={fill}>
-        Pub
-      </text>
-      {/* Book icon between Pub and Med */}
-      <g transform="translate(118, 8)">
-        <path d="M10 0 L10 55 M10 55 C10 55 25 45 40 55 M10 55 C10 55 -5 45 -20 55 M10 0 C10 0 25 -5 40 5 L40 55 M10 0 C10 0 -5 -5 -20 5 L-20 55" stroke={fill} strokeWidth="3" fill="none"/>
+    <svg className={className} width="220" height="44" viewBox="0 0 400 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={primary} />
+          <stop offset="100%" stopColor={secondary} />
+        </linearGradient>
+        <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Abstract Medical/Tech Icon */}
+      <g transform="translate(5, 10)">
+        <path d="M25 0 C45 0 55 10 55 30 C55 50 45 60 25 60 C5 60 -5 50 -5 30 C-5 10 5 0 25 0 Z" fill="url(#logoGrad)" fillOpacity="0.1" />
+        <path d="M25 10 V50 M10 30 H40" stroke="url(#logoGrad)" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="40" cy="15" r="4" fill={secondary} filter="url(#logoGlow)" />
       </g>
-      <text x="158" y="58" fontFamily="Source Sans 3, Source Sans Pro, Arial, sans-serif" fontSize="56" fontWeight="700" fill={fill}>
-        Med
+
+      {/* Text 'MedScholar' */}
+      <text x="70" y="52" fontFamily="system-ui, -apple-system, sans-serif" fontSize="42" fontWeight="800" letterSpacing="-1.5">
+        <tspan fill={textPrimary}>Med</tspan>
+        <tspan fill="url(#logoGrad)">Scholar</tspan>
       </text>
-      <text x="262" y="30" fontFamily="Source Sans 3, Source Sans Pro, Arial, sans-serif" fontSize="18" fontWeight="400" fill={fill}>®</text>
+      
+      {/* Decorative Accent */}
+      <circle cx="288" cy="48" r="5" fill={primary} />
     </svg>
   );
 }
 
-/** MedScholar Logo */
-function MedScholarLogo() {
-  return (
-    <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="40" height="40" rx="3" stroke="#fff" strokeWidth="2" fill="none"/>
-      <text x="7" y="28" fontFamily="Source Sans 3, Arial, sans-serif" fontSize="18" fontWeight="700" fill="#fff">MS</text>
-    </svg>
-  );
-}
 
 interface AppHeaderProps {
   compact?: boolean;
@@ -81,11 +90,7 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       <div className="pm-header__top">
         <div className="pm-header__top-inner container-wide">
           <NavLink to="/" className="pm-header__nlm-link" end>
-            <MedScholarLogo />
-            <div className="pm-header__nlm-text">
-              <span className="pm-header__nlm-name">MedScholar Platform</span>
-              <span className="pm-header__nlm-sub">Advanced Semantic Search Engine</span>
-            </div>
+            <PubMedLogo white />
           </NavLink>
 
           <div className="pm-header__actions">
@@ -136,11 +141,24 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       {/* Row 2: Search bar (compact mode only — i.e., after search or on inner pages) */}
       {compact && (
         <div className="pm-header__search-row">
-          <div className="pm-header__search-inner container-wide">
-            <NavLink to="/" className="pm-header__logo-link" aria-label="MedScholar home" end>
-              <PubMedLogo />
-            </NavLink>
-            <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch}>
+          <div className="pm-header__search-inner container-wide" style={{ justifyContent: 'center' }}>
+            <div style={{ paddingRight: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#semanticGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <defs>
+                  <linearGradient id="semanticGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2563EB" />
+                    <stop offset="100%" stopColor="#0EA5E9" />
+                  </linearGradient>
+                </defs>
+                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+              </svg>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: '#2563EB', letterSpacing: '-0.5px' }}>Semantic</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0EA5E9', letterSpacing: '1px', textTransform: 'uppercase' }}>Search</span>
+              </div>
+            </div>
+            <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch} style={{ maxWidth: '800px', flex: '1' }}>
               <input
                 type="text"
                 className="pm-header__search-input"
@@ -156,7 +174,9 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
               )}
               <button type="submit" className="pm-header__search-btn">Search</button>
             </form>
-
+            <div style={{ paddingLeft: '16px' }}>
+              <span style={{ color: '#2563EB', fontWeight: 600, fontSize: '14px', cursor: 'pointer', textDecoration: 'none' }}>Advanced Search</span>
+            </div>
           </div>
         </div>
       )}

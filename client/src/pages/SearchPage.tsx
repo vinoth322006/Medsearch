@@ -400,9 +400,6 @@ export function SearchPage() {
       <div className="pm-home">
         <section className="pm-hero" aria-labelledby="pm-hero-title">
           <div className="pm-hero__inner">
-            <div className="pm-hero__logo">
-              <PubMedLogo white />
-            </div>
             <p className="pm-hero__tagline">Advanced Semantic Search Engine</p>
             <form className="pm-hero__form" role="search" onSubmit={onSubmit}>
               <div className="pm-hero__search-box">
