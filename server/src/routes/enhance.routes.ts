@@ -76,7 +76,7 @@ Original query: ${parsed.query}`;
       return;
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const enhancedQuery = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || parsed.query;
 
     res.json({ enhancedQuery });
