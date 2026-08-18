@@ -47,12 +47,12 @@ export const FILTER_CONFIG: FilterGroup[] = [
     ],
   },
   {
-    key: 'textAvailability',
-    label: 'Text availability',
+    key: 'accessType',
+    label: 'Access type',
     type: 'checkbox',
     options: [
-      { value: 'abstract', label: 'Abstract' },
-      { value: 'freeFullText', label: 'Free full text' },
+      { value: 'openAccess', label: 'Open access' },
+      { value: 'closedAccess', label: 'Closed access' },
     ],
   },
   {

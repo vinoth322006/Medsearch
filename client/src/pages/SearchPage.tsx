@@ -165,8 +165,6 @@ export function SearchPage() {
   // Sort
   const [sortBy, setSortBy] = useState(initialSort);
 
-  // Display
-  const [displayFormat, setDisplayFormat] = useState('summary');
 
   // Filters
   const filtersHook = useFilters();
@@ -436,18 +434,28 @@ export function SearchPage() {
                     placeholder="Search PubMed — try natural language queries"
                     autoComplete="off"
                     aria-label="Search query"
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', paddingRight: query ? '40px' : 'var(--s-4)' }}
                   />
                   {query && (
-                    <button type="button" className="pm-hero__clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }} aria-label="Clear" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)' }}>
-                      <X size={18} />
-                    </button>
+                    <div style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                      <button type="button" className="pm-hero__clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }} aria-label="Clear" style={{ position: 'static', transform: 'none' }}>
+                        <X size={18} />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <button type="submit" className="pm-hero__search-btn" style={{ marginLeft: '8px' }}>Search</button>
                 {user && (
-                  <button type="button" className="pm-hero__search-btn" onClick={handleEnhance} disabled={isEnhancing} style={{ background: '#0EA5E9', marginLeft: '8px', minWidth: '130px', borderRadius: 'calc(var(--r-xl) - 4px)' }}>
-                    {isEnhancing ? '✨...' : '✨ Enhance'}
+                  <button 
+                    type="button" 
+                    onClick={handleEnhance} 
+                    disabled={isEnhancing} 
+                    title="Enhance with AI"
+                    className="pm-hero__enhance-btn"
+                    style={{ marginLeft: '8px' }}
+                  >
+                    <span aria-hidden="true">{isEnhancing ? '...' : '✨'}</span>
+                    <span className="pm-enhance-text">{isEnhancing ? 'Enhancing...' : 'AI Enhance'}</span>
                   </button>
                 )}
               </div>
@@ -523,8 +531,7 @@ export function SearchPage() {
           resultCount={processedResults.length}
           sortBy={sortBy}
           onSortChange={(v) => { setSortBy(v); setPage(1); }}
-          displayFormat={displayFormat}
-          onDisplayFormatChange={setDisplayFormat}
+
           perPage={perPage}
           onPerPageChange={(v) => { setPerPage(v); setPage(1); }}
           page={page}
@@ -626,7 +633,7 @@ export function SearchPage() {
                         globalIndex={globalIdx}
                         isBookmarked={isBookmarked}
                         onBookmarkChange={handleSingleBookmark}
-                        displayFormat={displayFormat}
+                        displayFormat="summary"
                         selected={selected.has(globalIdx)}
                         onSelect={(checked) => {
                           setSelected((prev) => {

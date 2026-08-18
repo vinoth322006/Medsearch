@@ -11,7 +11,7 @@ import { redis } from './cache';
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' } }));
 app.use(cors({ origin: config.corsOrigin, credentials: true, allowedHeaders: ['Authorization', 'Content-Type', 'X-Requested-With'], methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] }));
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());

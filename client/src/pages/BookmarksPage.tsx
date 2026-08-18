@@ -16,7 +16,6 @@ export function BookmarksPage() {
   const [error, setError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<Bookmark | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [filter, setFilter] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const folders = useMemo(() => {
@@ -51,11 +50,7 @@ export function BookmarksPage() {
     finally { setClearing(false); }
   }
 
-  const filtered = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return bookmarks ?? [];
-    return (bookmarks ?? []).filter((b) => b.resultText.toLowerCase().includes(q) || b.query.toLowerCase().includes(q) || (b.articleTitle ?? '').toLowerCase().includes(q));
-  }, [bookmarks, filter]);
+  const filtered = bookmarks ?? [];
 
   return (
     <div className="container page-content">
@@ -63,12 +58,6 @@ export function BookmarksPage() {
         <div>
           <h1>Bookmarks</h1>
           <p className="hint">{bookmarks?.length ?? 0} saved results {folders.length > 0 && <>· {folders.length} folder{folders.length > 1 ? 's' : ''}</>}</p>
-        </div>
-        <div className="row" style={{ gap: 'var(--s-3)' }}>
-          <input className="filter-input inline-filter" placeholder="Filter bookmarks..." value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter bookmarks" />
-          {(bookmarks?.length ?? 0) > 0 && (
-            <button className="btn btn--ghost btn--sm" onClick={() => setConfirmClear(true)}><Trash2 size={16} />Clear all</button>
-          )}
         </div>
       </div>
 
@@ -82,9 +71,7 @@ export function BookmarksPage() {
           <button className="btn btn--primary btn--sm" onClick={() => navigate('/')}><Search size={16} />Go to Search</button>
         </div>
       )}
-      {!loading && !error && (bookmarks?.length ?? 0) > 0 && filtered.length === 0 && (
-        <Alert variant="info">No bookmarks match "{filter}".</Alert>
-      )}
+
 
       <ul className="list-clean" aria-label="Saved bookmarks">
         {filtered.map((b) => {

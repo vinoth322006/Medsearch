@@ -174,12 +174,16 @@ export function applyFilters(
       }
     }
 
-    // 3) Text Availability (PubMed requires AND logic for text availability)
-    if (filters.textAvailability?.size) {
-      const wanted = filters.textAvailability;
-      if (wanted.has('abstract') && !hasAbstract(r)) return false;
-      if (wanted.has('freeFullText') && !hasFreeFullText(r)) return false;
-      if (wanted.has('fullText') && !hasFullText(r)) return false;
+    // 3) Access Type
+    if (filters.accessType?.size) {
+      const wanted = filters.accessType;
+      // If both are selected, no-op (shows both). Otherwise filter.
+      if (wanted.has('openAccess') && !wanted.has('closedAccess')) {
+        if (!hasFreeFullText(r)) return false;
+      }
+      if (wanted.has('closedAccess') && !wanted.has('openAccess')) {
+        if (hasFreeFullText(r)) return false; // Closed access is anything without free full text
+      }
     }
 
     // 4) Article Type (OR logic across selected types)
@@ -232,10 +236,12 @@ export function calculateFilterCounts(results: SearchResultItem[]): Record<strin
       if (year >= now - 10) counts['publicationDate:10y'] = (counts['publicationDate:10y'] ?? 0) + 1;
     }
 
-    // Text Availability
-    if (hasAbstract(r)) counts['textAvailability:abstract'] = (counts['textAvailability:abstract'] ?? 0) + 1;
-    if (hasFreeFullText(r)) counts['textAvailability:freeFullText'] = (counts['textAvailability:freeFullText'] ?? 0) + 1;
-    if (hasFullText(r)) counts['textAvailability:fullText'] = (counts['textAvailability:fullText'] ?? 0) + 1;
+    // Access Type
+    if (hasFreeFullText(r)) {
+      counts['accessType:openAccess'] = (counts['accessType:openAccess'] ?? 0) + 1;
+    } else {
+      counts['accessType:closedAccess'] = (counts['accessType:closedAccess'] ?? 0) + 1;
+    }
 
     // Language
     const lang = r.meta?.lang ?? 'eng';
@@ -275,7 +281,7 @@ export function calculateFilterCounts(results: SearchResultItem[]): Record<strin
 export const FILTER_GROUP_LABELS: Record<string, string> = {
   publicationDate: 'Publication date',
   yearRange: 'Year range',
-  textAvailability: 'Text availability',
+  accessType: 'Access type',
   articleType: 'Article type',
   language: 'Language',
   species: 'Species',

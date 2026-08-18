@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { SORT_OPTIONS, DISPLAY_FORMATS, type PerPage } from './filterConfig';
+import { SORT_OPTIONS, type PerPage } from './filterConfig';
 import type { SearchResultItem } from '../../api';
 
 interface ResultsActionBarProps {
   resultCount: number;
   sortBy: string;
   onSortChange: (value: string) => void;
-  displayFormat: string;
-  onDisplayFormatChange: (value: string) => void;
+
   perPage: PerPage;
   onPerPageChange: (value: PerPage) => void;
   page: number;
@@ -31,8 +30,7 @@ export function ResultsActionBar({
   resultCount,
   sortBy,
   onSortChange,
-  displayFormat,
-  onDisplayFormatChange,
+
   page,
   totalPages,
   onPageChange,
@@ -81,19 +79,7 @@ export function ResultsActionBar({
             ))}
           </select>
         </label>
-        <label className="pm-action-bar__display">
-          <span className="pm-action-bar__display-label">Display:</span>
-          <select
-            value={displayFormat}
-            onChange={(e) => onDisplayFormatChange(e.target.value)}
-            aria-label="Result display format"
-            title="Change how results are displayed"
-          >
-            {DISPLAY_FORMATS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </label>
+
       </div>
       <div className="pm-action-bar__results-meta">
         <span className="pm-action-bar__count">{resultCount.toLocaleString()} results</span>

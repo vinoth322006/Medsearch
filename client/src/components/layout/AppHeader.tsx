@@ -167,45 +167,38 @@ export function AppHeader({ compact, searchQuery = '', onSearch }: AppHeaderProp
       {compact && (
         <div className="pm-header__search-row">
           <div className="pm-header__search-inner container-wide" style={{ justifyContent: 'center' }}>
-            <div style={{ paddingRight: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#semanticGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <defs>
-                  <linearGradient id="semanticGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2563EB" />
-                    <stop offset="100%" stopColor="#0EA5E9" />
-                  </linearGradient>
-                </defs>
-                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
-                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
-              </svg>
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1' }}>
-                <span style={{ fontSize: '15px', fontWeight: 800, color: '#2563EB', letterSpacing: '-0.5px' }}>Semantic</span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0EA5E9', letterSpacing: '1px', textTransform: 'uppercase' }}>Search</span>
-              </div>
-            </div>
-            <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch} style={{ maxWidth: '800px', flex: '1' }}>
-              <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
-                <input
-                  type="text"
-                  className="pm-header__search-input"
-                  value={headerQuery}
-                  onChange={(e) => setHeaderQuery(e.target.value)}
-                  placeholder="Search PubMed"
-                  aria-label="Search"
-                  style={{ width: '100%', borderRadius: 'var(--r-sm)', borderRight: '2px solid var(--pm-navy)' }}
-                />
-                {headerQuery && (
-                  <button type="button" className="pm-header__search-clear" onClick={() => setHeaderQuery('')} aria-label="Clear search" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)' }}>
-                    <X size={18} />
+            <form className="pm-header__search-form" role="search" onSubmit={handleHeaderSearch} style={{ maxWidth: '1000px', flex: '1' }}>
+                <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                  <input
+                    className="pm-header__search-input"
+                    value={headerQuery}
+                    onChange={(e) => setHeaderQuery(e.target.value)}
+                    placeholder="Search PubMed"
+                    aria-label="Search"
+                    style={{ width: '100%', borderRadius: 'var(--r-sm)', borderRight: '2px solid var(--pm-navy)', paddingRight: headerQuery ? '40px' : '16px' }}
+                  />
+                  {headerQuery && (
+                    <div style={{ position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                      <button type="button" className="pm-header__search-clear" onClick={() => setHeaderQuery('')} aria-label="Clear search" style={{ position: 'static', transform: 'none' }}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button type="submit" className="pm-header__search-btn" style={{ marginLeft: '8px', borderRadius: 'var(--r-sm)' }}>Search</button>
+                {user && (
+                  <button 
+                    type="button" 
+                    onClick={handleEnhance} 
+                    disabled={isEnhancing} 
+                    title="Enhance with AI"
+                    className="pm-header__enhance-btn"
+                    style={{ marginLeft: '8px' }}
+                  >
+                    <span aria-hidden="true">{isEnhancing ? '...' : '✨'}</span>
+                    <span className="pm-enhance-text">{isEnhancing ? 'Enhancing...' : 'AI Enhance'}</span>
                   </button>
                 )}
-              </div>
-              <button type="submit" className="pm-header__search-btn" style={{ marginLeft: '8px', borderRadius: 'var(--r-sm)' }}>Search</button>
-              {user && (
-                <button type="button" className="pm-header__search-btn" onClick={handleEnhance} disabled={isEnhancing} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', marginLeft: '8px', borderRadius: 'var(--r-sm)' }}>
-                  {isEnhancing ? '✨...' : '✨ Enhance'}
-                </button>
-              )}
             </form>
           </div>
         </div>

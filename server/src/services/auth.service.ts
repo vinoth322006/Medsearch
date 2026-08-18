@@ -22,7 +22,7 @@ export function clearRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_COOKIE, { path: '/api/auth', httpOnly: true, sameSite: 'strict', secure: config.cookieSecure });
 }
 
-export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
+export async function signup(email: string, password: string, name?: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string; geminiApiKey?: string | null; geminiModel?: string | null } }> {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) throw httpError(409, 'Email already registered');
   if (password.length < 8) throw httpError(400, 'Password must be at least 8 characters');
@@ -36,7 +36,7 @@ export async function signup(email: string, password: string, name?: string, req
   return out;
 }
 
-export async function firebaseLogin(idToken: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string; avatarUrl?: string | null } }> {
+export async function firebaseLogin(idToken: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string; avatarUrl?: string | null; geminiApiKey?: string | null; geminiModel?: string | null } }> {
   const decodedToken = await firebaseAdminAuth.verifyIdToken(idToken);
   const email = decodedToken.email?.toLowerCase();
   
@@ -85,7 +85,7 @@ export async function firebaseLogin(idToken: string, req?: Request): Promise<{ a
   return { access, refresh, user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl, geminiApiKey: user.geminiApiKey, geminiModel: user.geminiModel } };
 }
 
-export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string } }> {
+export async function login(email: string, password: string, req?: Request): Promise<{ access: string; refresh: string; user: { id: string; email: string; name?: string | null; role: string; geminiApiKey?: string | null; geminiModel?: string | null } }> {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) throw httpError(401, 'Invalid credentials');
   if (!user.active) throw httpError(403, 'Account deactivated');
@@ -109,7 +109,7 @@ export async function logout(refreshToken: string | undefined): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revokedAt: new Date() } }).catch(() => undefined);
 }
 
-export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ access: string; refresh: string; sub: string; email: string; name?: string | null; role: 'user' | 'admin' }> {
+export async function rotateRefresh(oldToken: string, req?: Request): Promise<{ access: string; refresh: string; sub: string; email: string; name?: string | null; role: 'user' | 'admin'; geminiApiKey?: string | null; geminiModel?: string | null }> {
   const payload = verifyRefreshToken(oldToken);
   if (!payload) throw httpError(401, 'Invalid refresh token');
   const tokenHash = hashToken(oldToken);

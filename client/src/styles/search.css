@@ -30,7 +30,7 @@
 }
 
 .pm-hero__inner {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   width: 100%;
   position: relative;
@@ -80,7 +80,7 @@
 
 .pm-hero__input {
   flex: 1;
-  height: 56px;
+  height: 64px;
   padding: 0 var(--s-10) 0 var(--s-10);
   border: none;
   background: transparent;
@@ -118,7 +118,7 @@
 }
 
 .pm-hero__search-btn {
-  height: 56px;
+  height: 64px;
   padding: 0 var(--s-10);
   background: linear-gradient(90deg, var(--pm-green), #369c4c, var(--pm-green));
   background-size: 200% auto;
@@ -438,4 +438,31 @@
 @media (max-width: 600px) {
   .pm-hero { padding: var(--s-10) var(--s-4) var(--s-8); }
   .pm-hero__search-btn { min-width: 80px; font-size: var(--fs-16); padding: 0 var(--s-4); }
+  .pm-enhance-text { display: none; }
+  .pm-hero__enhance-btn { padding: 0 var(--s-4); min-width: auto; }
+}
+
+/* AI Enhance Button */
+.pm-hero__enhance-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 64px;
+  padding: 0 var(--s-6);
+  background: linear-gradient(135deg, #0EA5E9, #3B82F6);
+  color: #fff;
+  border: none;
+  border-radius: calc(var(--r-xl) - 4px);
+  font-size: var(--fs-16);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--t-1) var(--ease-out), box-shadow var(--t-1);
+}
+.pm-hero__enhance-btn:hover {
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  transform: translateY(-1px);
+}
+.pm-hero__enhance-btn:active {
+  transform: translateY(1px);
 }
