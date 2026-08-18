@@ -125,7 +125,11 @@ export function SearchPage() {
   const navigate = useNavigate();
 
   // Initialize from URL params so navigating back preserves state
-  const initialQ = new URLSearchParams(location.search).get('q') ?? '';
+  const urlParams = new URLSearchParams(location.search);
+  const initialQ = urlParams.get('q') ?? '';
+  const initialPage = parseInt(urlParams.get('p') ?? '1', 10) || 1;
+  const initialSort = urlParams.get('sort') ?? 'bestMatch';
+
   const [query, setQuery] = useState(initialQ);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(initialQ ? 'loading' : 'idle');
   const [data, setData] = useState<SearchResponse | null>(null);
@@ -134,11 +138,11 @@ export function SearchPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Pagination
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const [perPage, setPerPage] = useState<PerPage>(10);
 
   // Sort
-  const [sortBy, setSortBy] = useState('bestMatch');
+  const [sortBy, setSortBy] = useState(initialSort);
 
   // Display
   const [displayFormat, setDisplayFormat] = useState('summary');
@@ -150,6 +154,29 @@ export function SearchPage() {
   // Reset to page 1 whenever filters change.
   useEffect(() => { setPage(1); }, [filters, customRange, yearRange]);
 
+  // Sync page and sort to URL so they can be restored from history/session
+  useEffect(() => {
+    if (!initialQ) return;
+    const p = new URLSearchParams(location.search);
+    let changed = false;
+    
+    if (page !== 1) {
+      if (p.get('p') !== String(page)) { p.set('p', String(page)); changed = true; }
+    } else {
+      if (p.has('p')) { p.delete('p'); changed = true; }
+    }
+    
+    if (sortBy !== 'bestMatch') {
+      if (p.get('sort') !== sortBy) { p.set('sort', sortBy); changed = true; }
+    } else {
+      if (p.has('sort')) { p.delete('sort'); changed = true; }
+    }
+    
+    if (changed) {
+      navigate(`/?${p.toString()}`, { replace: true });
+    }
+  }, [page, sortBy, initialQ, navigate, location.search]);
+
   // Selection (for bulk actions)
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
@@ -158,7 +185,8 @@ export function SearchPage() {
   const run = useCallback(async (q: string) => {
     const trimmed = q.trim();
     if (trimmed.length < 3) { setError('Please enter at least 3 characters.'); return; }
-    setError(null); setStatus('loading'); setHasSearched(true); setPage(1);
+    setError(null); setStatus('loading'); setHasSearched(true); 
+    // Removed setPage(1) from here so it doesn't fight URL state
     setSelected(new Set());
     try {
       const res = await api.search({ query: trimmed, rerank: true });
@@ -172,11 +200,10 @@ export function SearchPage() {
 
   // Handle URL params for re-running searches, and reset when navigating home
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const q = params.get('q');
-    if (q) {
-      setQuery(q);
-      run(q);
+    if (initialQ) {
+      setQuery(initialQ);
+      setPage(initialPage);
+      run(initialQ);
     } else {
       // Navigated to / without ?q= → reset to homepage
       setHasSearched(false);
@@ -184,10 +211,23 @@ export function SearchPage() {
       setData(null);
       setError(null);
       setQuery('');
+      setPage(1);
     }
-  }, [location.search, run]);
+    // Only trigger when the actual query string changes (or on mount), NOT on pagination
+  }, [initialQ, run]);
 
-  const onSubmit = (e: React.FormEvent) => { e.preventDefault(); if (query.trim().length >= 3) navigate(`/?q=${encodeURIComponent(query.trim())}`); };
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim().length >= 3) {
+      if (query.trim() === initialQ) {
+        // Explicitly re-run search if they hit enter on same query
+        setPage(1);
+        run(query.trim());
+      } else {
+        navigate(`/?q=${encodeURIComponent(query.trim())}`);
+      }
+    }
+  };
 
   // Calculate matching counts for all filter choices
   const filterCounts = useMemo(() => {
