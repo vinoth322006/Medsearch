@@ -31,8 +31,10 @@ export default function App() {
   const hasSearchQuery = searchParams.has('q');
   const currentQuery = searchParams.get('q') ?? '';
 
-  // Show compact header on all pages except homepage without a query
-  const showCompact = !isHomepage || hasSearchQuery;
+  const isAuthPage = ['/login', '/signup', '/reset-password'].includes(location.pathname);
+  
+  // Show compact header on all pages except homepage without a query, and hide on auth pages
+  const showCompact = (!isHomepage || hasSearchQuery) && !isAuthPage;
 
   // Remember last search query in session storage
   useEffect(() => {
